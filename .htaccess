@@ -1,0 +1,89 @@
+# ==================================================
+
+# ENABLE REWRITE
+
+# ==================================================
+
+RewriteEngine On
+
+# ==================================================
+
+# 1. FORCE HTTPS + NON-WWW
+
+# ==================================================
+
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://plstats.uk%{REQUEST_URI} [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^www\.plstats\.uk$ [NC]
+RewriteRule ^ https://plstats.uk%{REQUEST_URI} [R=301,L]
+
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+# ==================================================
+
+# 2. MATCH DETAIL WITH SEO SLUG
+
+# Pattern: /matches/YYYY-YYYY/RR/team1-vs-team2/
+
+# ==================================================
+
+RewriteRule ^matches/([0-9]{4}-[0-9]{4})/([0-9]+)/([a-z0-9-]+)-vs-([a-z0-9-]+)/?$ matches/match.php?season=$1&round=$2&home=$3&away=$4 [L,QSA]
+
+# ==================================================
+
+# 3. MATCHES SEASON ARCHIVE
+
+# ==================================================
+
+RewriteRule ^matches/([0-9]{4}-[0-9]{4})/?$ matches/season.php?season=$1 [L,QSA]
+
+# ==================================================
+
+# 4. MATCHES HUB
+
+# ==================================================
+
+RewriteRule ^matches/?$ matches/index.php [L]
+
+RewriteRule ^author/?$ author/index.php [L]
+
+# ==================================================
+
+# 5. TEAM DETAIL WITH SLUG
+
+# ==================================================
+
+RewriteRule ^teams/([a-z0-9-]+)/?$ teams/team.php?slug=$1 [L,QSA]
+
+# ==================================================
+
+# 6. TEAMS HUB
+
+# ==================================================
+
+RewriteRule ^teams/?$ teams/index.php [L]
+
+# ==================================================
+
+# 7. NEWS DETAIL
+
+# ==================================================
+
+RewriteRule ^news/([a-z0-9-]+)/?$ news/news_details.php?slug=$1 [L,QSA]
+
+# ==================================================
+
+# 8. NEWS HUB
+
+# ==================================================
+
+RewriteRule ^news/?$ news/index.php [L]
+
+# ==================================================
+
+# 9. CUSTOM 404
+
+# ==================================================
+
+ErrorDocument 404 /404.php

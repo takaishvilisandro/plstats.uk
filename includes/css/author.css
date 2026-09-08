@@ -1,0 +1,276 @@
+/* ============================================================
+   PLStats.uk – Author Styles
+   Covers: author box (component) + author profile page
+   ============================================================ */
+
+/* ── Author Box (component) ────────────────────────────────── */
+
+.author_box {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.author_box_inner {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.author_box_avatar {
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 4px;
+}
+
+.author_box_avatar_link {
+  display: block;
+  flex-shrink: 0;
+}
+
+.author_box_content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.author_box_label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin-right: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.author_box_byline {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.author_box_name {
+  font-weight: 600;
+  color: #e8e8e8;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.author_box_name:hover {
+  text-decoration: underline;
+  color: #fff;
+}
+
+.author_box_role {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.author_box_role a {
+  color: rgba(255, 255, 255, 0.55);
+  text-decoration: none;
+}
+
+.author_box_role a:hover {
+  text-decoration: underline;
+}
+
+.author_box_bio {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+}
+
+.author_box_updated {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* ── Breadcrumb nav ────────────────────────────────────────── */
+
+.breadcrumb_nav {
+  margin-bottom: 1.25rem;
+}
+
+.breadcrumb_nav ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.breadcrumb_nav ol li + li::before {
+  content: "›";
+  margin-right: 0.25rem;
+}
+
+.breadcrumb_nav ol li a {
+  color: rgba(255, 255, 255, 0.55);
+  text-decoration: none;
+}
+
+.breadcrumb_nav ol li a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.breadcrumb_nav ol li[aria-current="page"] {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Author Profile Page ───────────────────────────────────── */
+
+.author_profile {
+  max-width: 760px;
+}
+
+.author_profile_header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0px 0px 15px 0px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 1.75rem;
+}
+
+.author_avatar_wrap {
+  flex-shrink: 0;
+}
+
+.author_avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 6px;
+}
+
+.author_profile_name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 10px !important;
+  color: #fff;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.author_profile_role {
+  margin: 0 0 0.15rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  margin-bottom: 0px !important;
+}
+
+.author_profile_org {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.author_profile_org a {
+  color: rgba(255, 255, 255, 0.55);
+  text-decoration: none;
+}
+
+.author_profile_org a:hover {
+  text-decoration: underline;
+}
+
+/* Profile sections */
+
+.author_bio_section,
+.author_expertise_section,
+.author_methodology_section,
+.author_coverage_section {
+  margin-bottom: 1rem;
+}
+
+.author_methodology_updated {
+  font-size: 0.85rem !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  padding: 0.6rem 0.85rem;
+  border-left: 3px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 4px 4px 0;
+}
+
+.author_expertise_list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.author_expertise_list li {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.92rem;
+  position: relative;
+  line-height: 1.5;
+}
+
+.author_coverage_links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.author_coverage_link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.author_coverage_link:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.author_coverage_link strong {
+  color: #e8e8e8;
+  font-size: 0.95rem;
+}
+
+.author_coverage_link span {
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+
+@media (max-width: 540px) {
+  .author_profile_header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .author_box_inner {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .author_profile_name {
+    font-size: 1.3rem;
+  }
+}

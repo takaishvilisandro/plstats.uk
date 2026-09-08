@@ -1,0 +1,410 @@
+<?php
+require '../includes/functions/db.php';
+require '../includes/schema-markups/schema-helpers.php';
+
+/* -------------------------------------------------
+   Helper
+------------------------------------------------- */
+function getSeasonFromDate(string $date): string
+{
+  $year  = (int)date('Y', strtotime($date));
+  $month = (int)date('n', strtotime($date));
+  return ($month >= 8) ? $year . '-' . ($year + 1) : ($year - 1) . '-' . $year;
+}
+
+/* -------------------------------------------------
+   Fetch – no ORDER BY (PHP will sort)
+------------------------------------------------- */
+$stmt = $pdo->query("
+    SELECT
+        m.Id,
+        m.Date,
+        m.Round,
+        m.HomeTeamId,
+        m.AwayTeamId,
+        m.HomeTeamScore,
+        m.AwayTeamScore,
+        ht.Name AS HomeTeamName,
+        ht.Logo AS HomeTeamLogo,
+        ht.Slug AS HomeTeamSlug,
+        at.Name AS AwayTeamName,
+        at.Logo AS AwayTeamLogo,
+        at.Slug AS AwayTeamSlug
+    FROM Matches m
+    JOIN Teams ht ON ht.Id = m.HomeTeamId
+    JOIN Teams at ON at.Id = m.AwayTeamId
+    WHERE m.DeleteDate IS NULL
+");
+$rows = $stmt->fetchAll();
+
+/* -------------------------------------------------
+   Cache timestamps + played flag + season per row
+------------------------------------------------- */
+$now = time();
+foreach ($rows as &$row) {
+  $row['_ts']     = $row['Date'] ? (int)strtotime($row['Date']) : 0;
+  $row['_played'] = ($row['HomeTeamScore'] !== null && $row['AwayTeamScore'] !== null);
+  $row['_season'] = $row['Date'] ? getSeasonFromDate($row['Date']) : '';
+}
+unset($row);
+
+/* -------------------------------------------------
+   Season resolution
+   The "active" season is derived from the data itself
+   (the season of the most recently dated row) rather
+   than the calendar, so the hub still works correctly
+   even if the site's data lags behind real time.
+   `Matches` may also still hold a leftover tail of the
+   previous season — the season filter keeps that from
+   ever being mixed into the active season's rounds.
+------------------------------------------------- */
+$seasonSet = [];
+$activeSeason = '';
+$activeSeasonTs = -1;
+foreach ($rows as $r) {
+  if ($r['_season'] === '') {
+    continue;
+  }
+  $seasonSet[$r['_season']] = true;
+  if ($r['_ts'] > $activeSeasonTs) {
+    $activeSeasonTs = $r['_ts'];
+    $activeSeason   = $r['_season'];
+  }
+}
+
+$seasonList = array_keys($seasonSet);
+rsort($seasonList); // newest season first
+
+// /matches/ always shows the active season — archives live at /matches/{season}/
+$selectedSeason = $activeSeason;
+
+$seasonRows = array_values(array_filter($rows, fn($r) => $r['_season'] === $selectedSeason));
+
+/* -------------------------------------------------
+   Anomaly detection (scoped to the selected season)
+   Anomaly: a match with round >= minUpcomingRound+2
+   has a kickoff earlier than the earliest upcoming
+   match in the minimum upcoming round.
+------------------------------------------------- */
+$anomaly  = false;
+$upcoming = array_values(array_filter(
+  $seasonRows,
+  fn($r) => !$r['_played'] && $r['_ts'] > $now && $r['Round']
+));
+
+if (!empty($upcoming)) {
+  $minUpcomingRound   = (int)min(array_column($upcoming, 'Round'));
+  $minRoundUpcoming   = array_filter($upcoming, fn($r) => (int)$r['Round'] === $minUpcomingRound);
+  $earliestInMinRound = min(array_column(array_values($minRoundUpcoming), '_ts'));
+
+  foreach ($seasonRows as $r) {
+    if ($r['Round'] && (int)$r['Round'] >= $minUpcomingRound + 2 && $r['_ts'] < $earliestInMinRound) {
+      $anomaly = true;
+      break;
+    }
+  }
+}
+
+/* -------------------------------------------------
+   Sort
+   Normal:  round DESC, kickoff ASC within round
+   Anomaly: kickoff DESC, round ASC (most-recent-first
+            across rounds when schedule is out of order)
+------------------------------------------------- */
+if ($anomaly) {
+  usort($seasonRows, fn($a, $b) => $b['_ts'] <=> $a['_ts'] ?: (int)$a['Round'] <=> (int)$b['Round']);
+} else {
+  usort($seasonRows, fn($a, $b) => (int)$b['Round'] <=> (int)$a['Round'] ?: $a['_ts'] <=> $b['_ts']);
+}
+
+/* -------------------------------------------------
+   Group by round number (safe now — single season)
+   Collect team list for filter
+------------------------------------------------- */
+$fixtures = [];   // [roundNum => [...matches]]
+$teamSet  = [];   // unique team names
+
+foreach ($seasonRows as $row) {
+  $rn = (int)$row['Round'];
+  if (!isset($fixtures[$rn])) {
+    $fixtures[$rn] = [];
+  }
+  $fixtures[$rn][] = $row;
+  $teamSet[$row['HomeTeamName']] = true;
+  $teamSet[$row['AwayTeamName']] = true;
+}
+
+// Distinct rounds sorted DESC by round number (for Load More logic)
+$allRoundNums = array_keys($fixtures);
+rsort($allRoundNums);
+
+// Team list alphabetical
+$teamList = array_keys($teamSet);
+sort($teamList);
+
+$allRoundNumsJson = json_encode($allRoundNums, JSON_THROW_ON_ERROR);
+?>
+<!DOCTYPE html>
+<html lang="en-GB">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <?php include '../includes/blocks/head.php' ?>
+
+  <title>Premier League Fixtures & Results – PLStats.uk</title>
+  <meta name="description" content="Premier League fixtures, results and live match coverage – updated with commentary and analysis." />
+  <link rel="stylesheet" href="https://plstats.uk/includes/css/matches.css" />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://plstats.uk/matches/" />
+
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website">
+  <meta property="og:locale"      content="en_GB">
+  <meta property="og:url"         content="https://plstats.uk/matches/">
+  <meta property="og:title"       content="Premier League Fixtures & Results – PLStats.uk">
+  <meta property="og:description" content="Premier League fixtures, results and live match coverage – updated with commentary and analysis.">
+
+  <!-- Twitter -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:site"        content="https://plstats.uk/">
+  <meta name="twitter:title"       content="Premier League Fixtures & Results – PLStats.uk">
+  <meta name="twitter:description" content="Premier League fixtures, results and live match coverage – updated with commentary and analysis.">
+
+  <?php
+  plstats_output_schema([
+    plstats_schema_organization(),
+    plstats_schema_website(),
+    plstats_schema_breadcrumb('https://plstats.uk/matches/#breadcrumb', [
+      ['name' => 'Home',    'url' => PLSTATS_BASE . '/'],
+      ['name' => 'Matches'],
+    ]),
+    array_merge(
+      plstats_schema_collection_page(
+        'https://plstats.uk/matches/',
+        'Premier League Matches – Fixtures & Results',
+        'Complete Premier League match coverage with fixtures, results, commentary, and statistics.',
+        'https://plstats.uk/matches/#breadcrumb'
+      ),
+      [
+        'about' => [
+          '@type' => 'SportsOrganization',
+          'name'  => 'Premier League',
+          'sport' => 'Association Football',
+        ],
+      ]
+    ),
+  ]);
+  ?>
+</head>
+
+<body>
+
+  <?php include '../includes/blocks/navbar.php' ?>
+
+  <div class="container content_container">
+    <?php include '../includes/blocks/navbar_side.php' ?>
+
+    <div class="content">
+
+      <h1>Premier League Matches</h1>
+
+      <!-- ── Filter bar ────────────────────────────────── -->
+      <div class="matches_filters" id="matchesFilters">
+        <?php if (count($seasonList) > 1): ?>
+        <div class="matches_filter_group">
+          <label for="filterSeason" class="matches_filter_label">Season</label>
+          <select id="filterSeason" class="matches_filter_select">
+            <?php foreach ($seasonList as $s): ?>
+            <option value="<?= htmlspecialchars($s) ?>" <?= $s === $selectedSeason ? 'selected' : '' ?>><?= htmlspecialchars($s) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <?php endif; ?>
+
+        <div class="matches_filter_group">
+          <label for="filterTeam" class="matches_filter_label">Team</label>
+          <select id="filterTeam" class="matches_filter_select">
+            <option value="">All Teams</option>
+            <?php foreach ($teamList as $t): ?>
+            <option value="<?= htmlspecialchars($t) ?>"><?= htmlspecialchars($t) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="matches_filter_group">
+          <label for="filterStatus" class="matches_filter_label">Status</label>
+          <select id="filterStatus" class="matches_filter_select">
+            <option value="">All Matches</option>
+            <option value="played">Played</option>
+            <option value="upcoming">Upcoming</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ── Matches grouped by round ──────────────────── -->
+      <section class="matches_section" id="matchesSection">
+
+        <?php foreach ($fixtures as $rn => $matches): ?>
+        <div class="round_group" data-round="<?= (int)$rn ?>">
+          <h2 class="match_date_header">Round <?= (int)$rn ?></h2>
+
+          <div class="match_tiles_row">
+            <?php foreach ($matches as $m):
+              $played  = $m['_played'];
+              $score   = $played ? "{$m['HomeTeamScore']} - {$m['AwayTeamScore']}" : "vs";
+              $status  = $played ? "FT" : ($m['_ts'] ? date('H:i', $m['_ts']) : '');
+              $dateStr = $m['_ts'] ? date('j M Y', $m['_ts']) . ' · ' . date('H:i', $m['_ts']) : '';
+              $matchUrl = "/matches/{$m['_season']}/{$m['Round']}/{$m['HomeTeamSlug']}-vs-{$m['AwayTeamSlug']}/";
+            ?>
+            <a href="<?= htmlspecialchars($matchUrl) ?>"
+               class="match_tile"
+               data-home="<?= htmlspecialchars($m['HomeTeamName']) ?>"
+               data-away="<?= htmlspecialchars($m['AwayTeamName']) ?>"
+               data-status="<?= $played ? 'played' : 'upcoming' ?>"
+               data-round="<?= (int)$rn ?>">
+
+              <div class="teams_info">
+                <div class="team">
+                  <img src="https://plstats.uk/<?= htmlspecialchars($m['HomeTeamLogo']) ?>" alt="<?= htmlspecialchars($m['HomeTeamName']) ?>">
+                  <h3><?= htmlspecialchars($m['HomeTeamName']) ?></h3>
+                </div>
+
+                <div class="team_vs">
+                  <span class="team_score"><?= $score ?></span>
+                  <span><?= $status ?></span>
+                </div>
+
+                <div class="team">
+                  <img src="https://plstats.uk/<?= htmlspecialchars($m['AwayTeamLogo']) ?>" alt="<?= htmlspecialchars($m['AwayTeamName']) ?>">
+                  <h3><?= htmlspecialchars($m['AwayTeamName']) ?></h3>
+                </div>
+              </div>
+
+              <?php if ($dateStr): ?>
+              <div class="match_tile_date"><?= htmlspecialchars($dateStr) ?></div>
+              <?php endif; ?>
+
+            </a>
+            <?php endforeach; ?>
+          </div>
+
+        </div><!-- /.round_group -->
+        <?php endforeach; ?>
+
+      </section><!-- /#matchesSection -->
+
+      <!-- ── Load more ─────────────────────────────────── -->
+      <div class="load_more_wrap">
+        <button id="loadMoreBtn" class="load_more_btn">Load more rounds</button>
+      </div>
+
+    </div>
+  </div>
+
+  <?php include '../includes/blocks/footer.php' ?>
+
+  <script>
+  /* ── Matches: Load More + Filter ─────────────────────── */
+  $(function () {
+    /* Season: navigate to the season's own archive URL (active season stays at /matches/) */
+    $('#filterSeason').on('change', function () {
+      var s = $(this).val();
+      window.location.href = (s === <?= json_encode($activeSeason, JSON_THROW_ON_ERROR) ?>)
+        ? '/matches/'
+        : ('/matches/' + s + '/');
+    });
+
+    var allRounds = <?= $allRoundNumsJson ?>;
+    var STEP = 3;
+    var MIN_FILTERED = 10;
+    var revealedCount = 0;
+
+    /* Show/hide round groups up to index n — no filter logic */
+    function revealUpTo(n) {
+      revealedCount = Math.min(n, allRounds.length);
+      $.each(allRounds, function (i, rn) {
+        $('.round_group[data-round="' + rn + '"]').toggle(i < revealedCount);
+      });
+      $('#loadMoreBtn').toggle(revealedCount < allRounds.length);
+    }
+
+    /* Show first n rounds then apply filters */
+    function reveal(n) {
+      revealUpTo(n);
+      applyFilters();
+    }
+
+    /* Count matching tiles inside a round group */
+    function countMatches($group, team, status) {
+      var n = 0;
+      $group.find('.match_tile').each(function () {
+        var $c = $(this);
+        if ((!team   || $c.data('home') === team   || $c.data('away') === team)
+         && (!status || $c.data('status') === status)) { n++; }
+      });
+      return n;
+    }
+
+    /* Filter visible rounds; auto-expand when filter is active */
+    function applyFilters() {
+      var team   = $('#filterTeam').val();
+      var status = $('#filterStatus').val();
+
+      /* Auto-expand: scan all rounds until MIN_FILTERED matches found */
+      if (team || status) {
+        var found = 0;
+        for (var i = 0; i < allRounds.length; i++) {
+          found += countMatches($('.round_group[data-round="' + allRounds[i] + '"]'), team, status);
+          if (found >= MIN_FILTERED) {
+            /* Expand only — never shrink below current revealed count */
+            if (i + 1 > revealedCount) {
+              revealUpTo(i + 1);
+            }
+            break;
+          }
+        }
+        /* If fewer than MIN_FILTERED exist across all rounds, reveal all */
+        if (found < MIN_FILTERED && revealedCount < allRounds.length) {
+          revealUpTo(allRounds.length);
+        }
+      }
+
+      /* Show/hide individual tiles and round headers */
+      $.each(allRounds, function (i, rn) {
+        if (i >= revealedCount) return;
+        var $group  = $('.round_group[data-round="' + rn + '"]');
+        var visible = 0;
+
+        $group.find('.match_tile').each(function () {
+          var $c  = $(this);
+          var ok  = (!team   || $c.data('home') === team   || $c.data('away') === team)
+                 && (!status || $c.data('status') === status);
+          $c.toggle(ok);
+          if (ok) visible++;
+        });
+
+        $group.toggle(visible > 0);
+      });
+    }
+
+    /* Init: show last 3 rounds */
+    reveal(STEP);
+
+    /* Load More */
+    $('#loadMoreBtn').on('click', function () {
+      reveal(revealedCount + STEP);
+    });
+
+    /* Filters */
+    $('#filterTeam, #filterStatus').on('change', applyFilters);
+  });
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,20 @@
+# Logs
+error_log
+*.log
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+includes/functions/db.config.php
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE local settings
+.vscode
