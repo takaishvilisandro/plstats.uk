@@ -124,14 +124,14 @@ if ($latestRound > 0) {
       $homeSlug = $match['HomeTeamSlug'];
       $awaySlug = $match['AwayTeamSlug'];
 
-      $matchUrl = "https://plstats.uk/matches/$season/$round/$homeSlug-vs-$awaySlug/";
+      $matchUrl = plstats_url("/matches/$season/$round/$homeSlug-vs-$awaySlug/");
       ?>
 
-      <a href="<?= $matchUrl ?>" class="latest_match_card">
+      <a href="<?= htmlspecialchars($matchUrl) ?>" class="latest_match_card">
 
         <div class="latest_match_teams">
           <div class="latest_match_team">
-            <img src="https://plstats.uk/<?= htmlspecialchars($match['HomeTeamLogo']) ?>"
+            <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($match['HomeTeamLogo'], '/'))) ?>"
               alt="<?= htmlspecialchars($match['HomeTeamName']) ?>">
             <span><?= htmlspecialchars($match['HomeTeamName']) ?></span>
           </div>
@@ -143,7 +143,7 @@ if ($latestRound > 0) {
           </div>
 
           <div class="latest_match_team">
-            <img src="https://plstats.uk/<?= htmlspecialchars($match['AwayTeamLogo']) ?>"
+            <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($match['AwayTeamLogo'], '/'))) ?>"
               alt="<?= htmlspecialchars($match['AwayTeamName']) ?>">
             <span><?= htmlspecialchars($match['AwayTeamName']) ?></span>
           </div>

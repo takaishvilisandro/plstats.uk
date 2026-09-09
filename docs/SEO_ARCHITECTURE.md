@@ -1,6 +1,6 @@
 # SEO architecture
 
-Domain used throughout: `https://plstats.uk` (HTTPS + non-www enforced in `.htaccess`).
+Domain used throughout production: `https://plstats.uk` (HTTPS + non-www enforced in `.htaccess` when Host is production). First-party absolute URLs are generated from `SITE_URL` (`bootstrap.php` / `plstats_url()`). With `SITE_URL=https://plstats.uk`, production output remains equivalent to the previous hardcoded host.
 
 ## URL structure
 

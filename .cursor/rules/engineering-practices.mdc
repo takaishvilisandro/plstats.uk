@@ -7,6 +7,7 @@ alwaysApply: true
 
 - **Reuse existing components** under `includes/blocks/`, `includes/components/`, and `includes/schema-markups/` before creating new ones.
 - **Do not change the database schema** (tables/columns/indexes) without explicit approval.
+- Load URLs/env via `includes/functions/bootstrap.php`; load `$pdo` via `db.php` (which includes bootstrap). Do not reintroduce hardcoded `https://plstats.uk` for first-party links.
 - Before marking work complete: **test PHP syntax** (`php -l` on changed files) and **smoke-test relevant localhost pages**.
 - Match existing code style; avoid drive-by refactors unrelated to the task.
 - Local setup and branching guidance: `docs/DEVELOPMENT.md`.

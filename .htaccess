@@ -8,10 +8,14 @@ RewriteEngine On
 
 # ==================================================
 
-# 1. FORCE HTTPS + NON-WWW
+# 1. FORCE HTTPS + NON-WWW (production host only)
+
+# Apache cannot read PHP APP_ENV. These rules apply only when the
+# request Host is plstats.uk / www.plstats.uk so localhost is unaffected.
 
 # ==================================================
 
+RewriteCond %{HTTP_HOST} ^(www\.)?plstats\.uk$ [NC]
 RewriteCond %{HTTPS} !=on
 RewriteRule ^ https://plstats.uk%{REQUEST_URI} [R=301,L]
 
@@ -66,24 +70,33 @@ RewriteRule ^teams/?$ teams/index.php [L]
 
 # ==================================================
 
-# 7. NEWS DETAIL
+# 7. NEWS DETAIL (only when the script exists)
 
 # ==================================================
 
+RewriteCond news/news_details.php -f
 RewriteRule ^news/([a-z0-9-]+)/?$ news/news_details.php?slug=$1 [L,QSA]
 
 # ==================================================
 
-# 8. NEWS HUB
+# 8. NEWS HUB (only when the script exists)
 
 # ==================================================
 
+RewriteCond news/index.php -f
 RewriteRule ^news/?$ news/index.php [L]
 
 # ==================================================
 
 # 9. CUSTOM 404
 
+# Relative rewrite target resolves against this .htaccess directory, so the
+# same rule works at document root (production) and under a subdirectory
+# (local). Do not use ErrorDocument with a bare "404.php" — Apache treats
+# that as a response message string, not a document path.
+
 # ==================================================
 
-ErrorDocument 404 /404.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ 404.php [L]

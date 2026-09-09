@@ -7,13 +7,16 @@ PLStats.uk is a classic multi-page PHP application: each public URL maps to a PH
 ```
 Browser → Apache (.htaccess) → PHP page entry
                 ↓
-         includes/functions/db.php  →  $pdo (from private db.config.php)
+         includes/functions/bootstrap.php  →  APP_ENV, SITE_URL, helpers
+                ↓
+         includes/functions/db.php  →  $pdo (from app.config.php db section)
                 ↓
          SQL SELECTs + includes/blocks + optional schema-helpers
                 ↓
          HTML response
 ```
 
+Pages that need URLs but not MySQL (e.g. `404.php`) require `bootstrap.php` only.
 ## Entry points
 
 | Public path / rewrite | PHP file |
@@ -57,14 +60,16 @@ Typical page pattern:
 
 ## Database access
 
-- **Committed loader:** `includes/functions/db.php`
-  - Requires readable `includes/functions/db.config.php`
-  - Builds PDO DSN: `mysql:host=…;dbname=…;charset=…`
-  - Exposes `$pdo` with `ERRMODE_EXCEPTION` and `FETCH_ASSOC`
+- **Bootstrap (no DB):** `includes/functions/bootstrap.php`
+  - Loads private `app.config.php`
+  - Defines `APP_ENV`, `SITE_URL`, `SITE_BASE_PATH`, `PLSTATS_*` constants
+  - Helpers: `plstats_url()`, `plstats_request_path()`
+- **Committed DB loader:** `includes/functions/db.php`
+  - Requires bootstrap, then creates `$pdo` from nested `db` keys (`host`, `dbname`, `user`, `pass`, `charset`)
   - On missing/invalid config or connection failure: HTTP 500 + generic message; details go to `error_log`
-- **Private config:** `db.config.php` (gitignored) — array keys `host`, `dbname`, `user`, `pass`, `charset`
-- **Template:** `db.config.example.php`
-- **Web protection:** `includes/.htaccess` denies HTTP access to `db.config.php` and disables indexes
+- **Private config:** `app.config.php` (gitignored) — see `app.config.example.php`
+- **Legacy:** `db.config.php` remains gitignored during migration; prefer `app.config.php`
+- **Web protection:** `includes/.htaccess` denies HTTP access to `app.config.php` and `db.config.php`
 
 Pages do not use a separate DAO/ORM layer; SQL is written inline in page/component PHP.
 
@@ -72,12 +77,12 @@ Pages do not use a separate DAO/ORM layer; SQL is written inline in page/compone
 
 Defined in root `.htaccess`:
 
-1. Force HTTPS and non-www → `https://plstats.uk…`
+1. Force HTTPS and non-www **only when Host is `plstats.uk` / `www.plstats.uk`**
 2. `sitemap.xml` → `sitemap.php`
 3. Match detail, season, matches hub, author, team detail, teams hub, news detail, news hub (see entry points)
-4. Custom 404 → `/404.php`
+4. Custom 404 → internal rewrite to `404.php` (relative to the app directory; `404.php` sets HTTP 404)
 
-Match detail additionally **301-redirects** in PHP to the canonical slug path when the request path differs or the season segment is wrong (`matches/match.php`).
+Match detail additionally **301-redirects** in PHP to the canonical slug path when the request path (relative to `SITE_BASE_PATH`) differs or the season segment is wrong (`matches/match.php`).
 
 ## Dependencies
 

@@ -6,7 +6,7 @@
 
 There are **no** import scripts, API client integrations, cron jobs, `.sql` seed/migration files, or admin writers in the tracked tree. How rows are inserted or updated in production is **outside this codebase** and must not be assumed.
 
-Local/production setup requires a populated MySQL database reachable via `includes/functions/db.config.php`.
+Local/production setup requires a populated MySQL database reachable via the nested `db` section in private `includes/functions/app.config.php` (see `DEVELOPMENT.md`). Use local credentials for development; production credentials only on the production server.
 
 ## Database usage
 

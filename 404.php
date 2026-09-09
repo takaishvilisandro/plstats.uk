@@ -1,3 +1,7 @@
+<?php
+http_response_code(404);
+require_once __DIR__ . '/includes/functions/bootstrap.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -8,7 +12,7 @@
   <meta name="description" content="Page not found on plstats.uk. Return to our homepage to explore trusted Non-GamStop casino reviews and guides.">
 
   <!-- Canonical Tag -->
-  <link rel="canonical" href="https://plstats.uk/404" />
+  <link rel="canonical" href="<?= htmlspecialchars(plstats_url('/404')) ?>" />
 
   <!-- Prevent Indexing -->
   <meta name="robots" content="noindex, nofollow">
@@ -24,7 +28,7 @@
     <p>
       Sorry, the page you're looking for doesn't exist or may have been moved.
     </p>
-    <a href="https://plstats.uk/" title="Return to Homepage">
+    <a href="<?= htmlspecialchars(plstats_url('/')) ?>" title="Return to Homepage">
       Back to Home
     </a>
   </section>

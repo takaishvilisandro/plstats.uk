@@ -11,23 +11,17 @@
  *   $graph = [
  *       plstats_schema_organization(),
  *       plstats_schema_website(),
- *       plstats_schema_breadcrumb('https://plstats.uk/foo/#breadcrumb', [...]),
+ *       plstats_schema_breadcrumb(plstats_url('/foo/#breadcrumb'), [...]),
  *       // ... page-specific nodes
  *   ];
  *   plstats_output_schema($graph);
  */
 
-// ── Site-wide constants ───────────────────────────────────────────────────────
-
-if (!defined('PLSTATS_BASE')) {
-    define('PLSTATS_BASE',       'https://plstats.uk');
-    define('PLSTATS_NAME',       'PLStats.uk');
-    define('PLSTATS_LOGO',       'https://plstats.uk/includes/images/plstats-logo-colorful.png');
-    define('PLSTATS_OG_IMAGE',   'https://plstats.uk/includes/images/premier-league-stats-analysis-plstats-uk.webp');
-    define('PLSTATS_AUTHOR_URL', 'https://plstats.uk/author/');
-    define('PLSTATS_AUTHOR_ID',  'https://plstats.uk/author/#author');
-    define('PLSTATS_AUTHOR_NAME','PLStats Editorial Team');
+if (!defined('SITE_URL')) {
+    require_once __DIR__ . '/../functions/bootstrap.php';
 }
+
+// ── Site-wide constants (PLSTATS_* defined in bootstrap.php from SITE_URL) ────
 
 // ── Sitewide nodes ────────────────────────────────────────────────────────────
 
@@ -105,8 +99,8 @@ function plstats_schema_author_person(): array
 /**
  * BreadcrumbList node.
  *
- * @param string $id     Absolute URL used as @id (e.g. 'https://plstats.uk/foo/#breadcrumb')
- * @param array  $items  [['name'=>'Home','url'=>'https://plstats.uk/'], ['name'=>'Foo']]
+ * @param string $id     Absolute URL used as @id (e.g. plstats_url('/foo/#breadcrumb'))
+ * @param array  $items  [['name'=>'Home','url'=>plstats_url('/')], ['name'=>'Foo']]
  *                       Last item may omit 'url' (current page).
  */
 function plstats_schema_breadcrumb(string $id, array $items): array

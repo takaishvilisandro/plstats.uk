@@ -44,10 +44,14 @@ News routes, CSS, and components exist in places, but **news PHP pages are not p
     ├── blocks/               # head, navbar, navbar_side, footer
     ├── components/           # latest_matches, news_card, hot_picks, telegram_banner
     ├── css/                  # Site stylesheets
-    ├── functions/            # db.php, db.config.example.php (secrets file gitignored)
+    ├── functions/            # bootstrap.php, db.php, app.config.example.php (secrets gitignored)
     ├── images/               # Logos, favicon, OG image, club logos
     └── schema-markups/       # JSON-LD helpers
 ```
+
+## Configuration note
+
+Private `includes/functions/app.config.php` (not in Git) sets `APP_ENV`, `SITE_URL`, and nested `db` credentials. See `DEVELOPMENT.md` and `DECISIONS.md` (ADR-007).
 
 ## Data note
 

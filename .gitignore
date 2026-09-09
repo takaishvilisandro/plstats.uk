@@ -6,6 +6,7 @@ error_log
 .env
 .env.*
 !.env.example
+includes/functions/app.config.php
 includes/functions/db.config.php
 
 # OS files

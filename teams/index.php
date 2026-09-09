@@ -17,20 +17,20 @@ $teams = $stmt->fetchAll();
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <?php include '../includes/blocks/head.php'; ?>
-  <link href="https://plstats.uk/includes/css/teams.css" rel="stylesheet">
+  <link href="<?= htmlspecialchars(plstats_url('/includes/css/teams.css')) ?>" rel="stylesheet">
 
   <title>Premier League Teams – PLStats.uk</title>
   <meta name="description" content="Explore all Premier League teams with quick stats, upcoming matches, and club profiles.">
 
   <!-- TEMP: Block all bots -->
-  <meta name="canonical" content="https://plstats.uk/teams/" />
+  <meta name="canonical" content="<?= htmlspecialchars(plstats_url('/teams/')) ?>" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:locale" content="en_GB">
   <meta property="og:title" content="Premier League Teams – PLStats.uk">
   <meta property="og:description" content="Complete list of Premier League teams with stats and profiles.">
-  <meta property="og:url" content="https://plstats.uk/teams/">
+  <meta property="og:url" content="<?= htmlspecialchars(plstats_url('/teams/')) ?>">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
@@ -57,12 +57,12 @@ $teams = $stmt->fetchAll();
           <?php if ($teams): ?>
             <?php foreach ($teams as $team): ?>
               <a
-                href="https://plstats.uk/teams/<?= htmlspecialchars($team['Slug']) ?>/"
+                href="<?= htmlspecialchars(plstats_url('/teams/' . $team['Slug'] . '/')) ?>"
                 class="team_card"
                 aria-label="<?= htmlspecialchars($team['Name']) ?> team page">
                 <div class="team_logo">
                   <img
-                    src="https://plstats.uk/<?= htmlspecialchars($team['Logo']) ?>"
+                    src="<?= htmlspecialchars(plstats_url('/' . ltrim($team['Logo'], '/'))) ?>"
                     alt="<?= htmlspecialchars($team['Name']) ?> logo"
                     loading="lazy">
                 </div>
@@ -93,15 +93,15 @@ $teams = $stmt->fetchAll();
       "@type": "CollectionPage",
       "name": "Premier League Teams",
       "description": "Complete list of Premier League football teams with stats and profiles.",
-      "url": "https://plstats.uk/teams/",
+      "url": <?= json_encode(plstats_url('/teams/')) ?>,
       "mainEntity": {
         "@type": "ItemList",
         "itemListElement": [
           <?php foreach ($teams as $i => $team): ?> {
               "@type": "SportsTeam",
-              "name": "<?= addslashes($team['Name']) ?>",
+              "name": <?= json_encode($team['Name']) ?>,
               "sport": "Football",
-              "url": "https://plstats.uk/teams/<?= addslashes($team['Slug']) ?>"
+              "url": <?= json_encode(plstats_url('/teams/' . $team['Slug'])) ?>
             }
             <?= $i < count($teams) - 1 ? ',' : '' ?>
           <?php endforeach; ?>

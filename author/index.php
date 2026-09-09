@@ -45,7 +45,7 @@ $graph = [
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <?php include '../includes/blocks/head.php' ?>
-  <link rel="stylesheet" href="https://plstats.uk/includes/css/author.css" />
+  <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/author.css')) ?>" />
 
   <title>About the Author – PLStats.uk | Premier League Data Analysts</title>
   <meta name="description" content="Meet the PLStats editorial team: football data analysts and sports writers producing structured Premier League match analysis, verified statistics, and tactical commentary." />
@@ -81,7 +81,7 @@ $graph = [
       <!-- BREADCRUMB -->
       <nav class="breadcrumb_nav" aria-label="Breadcrumb">
         <ol>
-          <li><a href="https://plstats.uk/">Home</a></li>
+          <li><a href="<?= htmlspecialchars(plstats_url('/')) ?>">Home</a></li>
           <li aria-current="page">Author</li>
         </ol>
       </nav>
@@ -92,7 +92,7 @@ $graph = [
         <header class="author_profile_header">
           <div class="author_avatar_wrap">
             <img
-              src="https://plstats.uk/includes/images/plstats-logo-colorful.png"
+              src="<?= htmlspecialchars(plstats_url('/includes/images/plstats-logo-colorful.png')) ?>"
               alt="PLStats Editorial Team"
               class="author_avatar"
               width="96"
@@ -102,7 +102,7 @@ $graph = [
             <h1 class="author_profile_name"><?= htmlspecialchars($authorName) ?></h1>
             <p class="author_profile_role">Football Data Analyst &amp; Sports Writer</p>
             <p class="author_profile_org">
-              <a href="https://plstats.uk/">PLStats.uk</a>
+              <a href="<?= htmlspecialchars(plstats_url('/')) ?>">PLStats.uk</a>
             </p>
           </div>
         </header>
@@ -159,11 +159,11 @@ $graph = [
         <section class="author_coverage_section">
           <h2>Coverage on PLStats.uk</h2>
           <div class="author_coverage_links">
-            <a href="https://plstats.uk/matches/" class="author_coverage_link">
+            <a href="<?= htmlspecialchars(plstats_url('/matches/')) ?>" class="author_coverage_link">
               <strong>Matches</strong>
               <span>Post-match commentary, statistics, and lineups for every Premier League fixture</span>
             </a>
-            <a href="https://plstats.uk/teams/" class="author_coverage_link">
+            <a href="<?= htmlspecialchars(plstats_url('/teams/')) ?>" class="author_coverage_link">
               <strong>Teams</strong>
               <span>Club profiles with recent form, key stats, and fixture history</span>
             </a>

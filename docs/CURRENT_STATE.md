@@ -1,12 +1,12 @@
 # Current state
 
-Last aligned with repository inspection and Git history as of documentation creation (single commit on `main`: `7db2a22`).
+Last aligned with the environment-config implementation on branch `cursor/environment-config`.
 
 ## Completed work
 
-- **Baseline repository committed** — full initial tree for PLStats.uk (pages, includes, CSS, images, SEO wiring, DB bootstrap) in commit `7db2a22` (*Secure database config and establish PLStats baseline*).
-- Private DB config pattern in place (`db.php` + gitignored `db.config.php` + example + `includes/.htaccess` deny).
-- Core public surfaces implemented: home, matches hub/season/match, teams hub/team, author, 404, dynamic sitemap, robots.
+- **Baseline repository committed** — full initial tree for PLStats.uk in commit `7db2a22`.
+- **Project knowledge docs + Cursor rules** — `docs/` and `.cursor/rules/` (branch `cursor/project-knowledge-docs`).
+- **Centralized environment config** — `bootstrap.php` + private `app.config.php` (`APP_ENV`, `SITE_URL`, nested `db`); first-party URLs use `SITE_URL`; `$pdo` preserved via `db.php`; production Host-gated `.htaccess` redirects; local subdirectory path handling via `SITE_BASE_PATH` / `plstats_request_path()`.
 
 ## Known problems (confirmed in code)
 
@@ -21,18 +21,17 @@ Last aligned with repository inspection and Git history as of documentation crea
 | Social URL inconsistency | Home schema vs `schema-helpers.php` Twitter handles differ (`plstats_uk` vs `plstatsuk`) |
 | Placeholder components | `hot_picks.php`, `telegram_banner.php` (and unused news cards) not integrated as live product features |
 | No in-repo data refresh | Match/team data write path not present in this repository |
-| Local secrets file | `db.config.php` may be absent until each machine copies the example |
+| Local DB setup | Each machine needs its own local MySQL + `app.config.php` (never production credentials) |
 
 ## Current task
 
-Establish permanent project knowledge for Cursor sessions across machines: `docs/*` documentation and `.cursor/rules/*` project rules (no application code changes in that task).
+Implement and review centralized environment-aware configuration (`cursor/environment-config`) before commit.
 
 ## Next recommended steps
 
-1. Resolve the news surface consistently (implement pages, or remove/adjust routes + sitemap entries + dead assets) under explicit SEO approval where URLs/indexation are affected.
-2. Add the missing `author-box` component or remove the include.
-3. Fix teams hub canonical to `<link rel="canonical">` and clear TEMP comment.
-4. Fix 404 meta description copy; scrub flashscore/localhost leftovers.
-5. Align Organization `sameAs` / Twitter handles across home and helpers.
-6. Document or implement the external data refresh process once decided.
-7. Prefer feature branches for larger/risky follow-ups (`DEVELOPMENT.md`).
+1. Confirm local `app.config.php` points at a working **local** database; smoke-test all key pages.
+2. On production deploy: create server-side `app.config.php` **before** switching code, with `SITE_URL=https://plstats.uk` and production DB credentials.
+3. Resolve the news surface consistently under explicit SEO approval where URLs/indexation are affected.
+4. Add the missing `author-box` component or remove the include.
+5. Fix teams hub canonical tag format and 404 meta copy (separate from config work).
+6. Prefer feature branches for larger/risky follow-ups (`DEVELOPMENT.md`).

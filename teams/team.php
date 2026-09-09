@@ -81,25 +81,25 @@ function getSeasonFromDate(string $date): string
   <!-- ⛔ DO NOT TOUCH SEO -->
   <title><?= htmlspecialchars($team['Name']) ?> – Team Profile | PLStats.uk</title>
   <meta name="description" content="See <?= htmlspecialchars($team['Name']) ?> fixtures, form, and stats – powered by PLStats.uk." />
-  <link href="https://plstats.uk/includes/css/teams.css" rel="stylesheet" type="text/css" />
-  <link rel="canonical" href="https://plstats.uk/teams/<?= htmlspecialchars($teamSlug) ?>/" />
+  <link href="<?= htmlspecialchars(plstats_url('/includes/css/teams.css')) ?>" rel="stylesheet" type="text/css" />
+  <link rel="canonical" href="<?= htmlspecialchars(plstats_url('/teams/' . $teamSlug . '/')) ?>" />
 
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:locale" content="en_GB">
-  <meta property="og:url" content="https://plstats.uk/teams/<?= htmlspecialchars($teamSlug) ?>/">
+  <meta property="og:url" content="<?= htmlspecialchars(plstats_url('/teams/' . $teamSlug . '/')) ?>">
   <meta property="og:title" content="<?= htmlspecialchars($team['Name']) ?> – Team Profile | PLStats.uk">
   <meta property="og:description" content="See <?= htmlspecialchars($team['Name']) ?> fixtures, form, and stats – powered by PLStats.uk.">
-  <meta property="og:image" content="https://plstats.uk/<?= htmlspecialchars($team['Logo']) ?>">
+  <meta property="og:image" content="<?= htmlspecialchars(plstats_url('/' . ltrim($team['Logo'], '/'))) ?>">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:site" content="https://plstats.uk/">
+  <meta name="twitter:site" content="<?= htmlspecialchars(plstats_url('/')) ?>">
   <meta name="twitter:title" content="<?= htmlspecialchars($team['Name']) ?> – Team Profile | PLStats.uk">
   <meta name="twitter:description" content="See <?= htmlspecialchars($team['Name']) ?> fixtures, form, and stats – powered by PLStats.uk.">
-  <meta name="twitter:image" content="https://plstats.uk/<?= htmlspecialchars($team['Logo']) ?>">
+  <meta name="twitter:image" content="<?= htmlspecialchars(plstats_url('/' . ltrim($team['Logo'], '/'))) ?>">
 </head>
 
 <body>
@@ -113,7 +113,7 @@ function getSeasonFromDate(string $date): string
 
       <!-- TEAM HEADER -->
       <section class="team_header fixture_box">
-        <img src="https://plstats.uk/<?= htmlspecialchars($team['Logo']) ?>" alt="<?= htmlspecialchars($team['Name']) ?> Logo" class="team_header_logo">
+        <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($team['Logo'], '/'))) ?>" alt="<?= htmlspecialchars($team['Name']) ?> Logo" class="team_header_logo">
         <div class="team_header_info">
           <h1><?= htmlspecialchars($team['Name']) ?></h1>
           <p class="team_meta">
@@ -199,7 +199,7 @@ function getSeasonFromDate(string $date): string
 
             // Generate match URL
             $season = getSeasonFromDate($m['Date']);
-            $matchUrl = "/matches/{$season}/{$m['Round']}/{$m['home_team_slug']}-vs-{$m['away_team_slug']}/";
+            $matchUrl = plstats_url("/matches/{$season}/{$m['Round']}/{$m['home_team_slug']}-vs-{$m['away_team_slug']}/");
           ?>
             <a href="<?= htmlspecialchars($matchUrl) ?>" class="match_row">
               <div><?= date('j M Y', strtotime($m['Date'])) ?></div>

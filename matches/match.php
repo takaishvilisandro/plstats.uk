@@ -79,7 +79,7 @@ $matchSeason = getSeasonFromDate($match['Date']);
 if ($matchSeason !== $season) {
   // Redirect to correct season URL
   $correctPath = "/matches/$matchSeason/$round/$homeSlug-vs-$awaySlug/";
-  header("Location: https://plstats.uk$correctPath", true, 301);
+  header('Location: ' . plstats_url($correctPath), true, 301);
   exit;
 }
 
@@ -87,12 +87,12 @@ if ($matchSeason !== $season) {
    Build canonical SEO URL
 ---------------------------------------- */
 $canonicalPath = "/matches/$season/$round/$homeSlug-vs-$awaySlug/";
-$canonicalUrl  = "https://plstats.uk" . $canonicalPath;
+$canonicalUrl  = plstats_url($canonicalPath);
 
 /* ----------------------------------------
    Force canonical URL (301)
 ---------------------------------------- */
-$currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$currentPath = plstats_request_path();
 if ($currentPath !== $canonicalPath) {
   header("Location: $canonicalUrl", true, 301);
   exit;
@@ -330,8 +330,8 @@ if ($review) {
   <?php include '../includes/blocks/head.php' ?>
 
   <!-- SEO HEAD (same structure, now dynamic) -->
-  <link rel="stylesheet" href="https://plstats.uk/includes/css/match-details.css" />
-  <link rel="stylesheet" href="https://plstats.uk/includes/css/author.css" />
+  <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/match-details.css')) ?>" />
+  <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/author.css')) ?>" />
 
   <title><?= htmlspecialchars($matchTitle) ?></title>
   <meta name="description" content="<?= htmlspecialchars($matchDesc) ?>" />
@@ -370,7 +370,7 @@ if ($review) {
         <div class="teams_info">
 
           <div class="team">
-            <img src="https://plstats.uk/<?= htmlspecialchars($match['HomeTeamLogo']) ?>" alt="<?= htmlspecialchars($home) ?> logo">
+            <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($match['HomeTeamLogo'], '/'))) ?>" alt="<?= htmlspecialchars($home) ?> logo">
             <h3><?= htmlspecialchars($home) ?></h3>
           </div>
 
@@ -380,7 +380,7 @@ if ($review) {
           </div>
 
           <div class="team">
-            <img src="https://plstats.uk/<?= htmlspecialchars($match['AwayTeamLogo']) ?>" alt="<?= htmlspecialchars($away) ?> logo">
+            <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($match['AwayTeamLogo'], '/'))) ?>" alt="<?= htmlspecialchars($away) ?> logo">
             <h3><?= htmlspecialchars($away) ?></h3>
           </div>
         </div>

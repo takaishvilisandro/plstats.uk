@@ -11,7 +11,7 @@ include "includes/functions/db.php";
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
 
   <?php include 'includes/blocks/head.php' ?>
-  <link href="https://plstats.uk/includes/css/latest_matches.css" rel="stylesheet" type="text/css" />
+  <link href="<?= SITE_URL ?>/includes/css/latest_matches.css" rel="stylesheet" type="text/css" />
   
   <!-- Primary Meta Tags -->
   <title>plstats | Premier League Stats, Match Commentary & Lineups (2026)</title>
@@ -21,17 +21,17 @@ include "includes/functions/db.php";
   <meta property="og:type" content="website" />
   <meta property="og:title" content="plstats – Premier League Stats, Commentary & Lineups" />
   <meta property="og:description" content="Explore Premier League match stats, expert commentary, confirmed lineups, and tactical insights. plstats turns raw football data into clear analysis." />
-  <meta property="og:image" content="https://plstats.uk/includes/images/premier-league-stats-analysis-plstats-uk.webp" />
-  <meta property="og:url" content="https://plstats.uk/" />
+  <meta property="og:image" content="<?= SITE_URL ?>/includes/images/premier-league-stats-analysis-plstats-uk.webp" />
+  <meta property="og:url" content="<?= SITE_URL ?>/" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="plstats – Premier League Match Stats & Analysis" />
   <meta name="twitter:description" content="Detailed Premier League statistics, lineups, and match commentary in one data-driven platform." />
-  <meta name="twitter:image" content="https://plstats.uk/includes/images/premier-league-stats-analysis-plstats-uk.webp" />
+  <meta name="twitter:image" content="<?= SITE_URL ?>/includes/images/premier-league-stats-analysis-plstats-uk.webp" />
 
   <!-- Canonical -->
-  <link rel="canonical" href="https://plstats.uk/" />
+  <link rel="canonical" href="<?= SITE_URL ?>/" />
 
   <!-- Robots -->
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
@@ -42,18 +42,18 @@ include "includes/functions/db.php";
       "@context": "https://schema.org",
       "@graph": [{
           "@type": "WebSite",
-          "@id": "https://plstats.uk/#website",
-          "url": "https://plstats.uk/",
+          "@id": "<?= SITE_URL ?>/#website",
+          "url": "<?= SITE_URL ?>/",
           "name": "PLStats.uk",
           "description": "Premier League statistics, match commentary, lineups, and tactical analysis",
           "publisher": {
-            "@id": "https://plstats.uk/#organization"
+            "@id": "<?= SITE_URL ?>/#organization"
           },
           "potentialAction": {
             "@type": "SearchAction",
             "target": {
               "@type": "EntryPoint",
-              "urlTemplate": "https://plstats.uk/matches/?q={search_term_string}"
+              "urlTemplate": "<?= SITE_URL ?>/matches/?q={search_term_string}"
             },
             "query-input": "required name=search_term_string"
           },
@@ -61,20 +61,20 @@ include "includes/functions/db.php";
         },
         {
           "@type": "Organization",
-          "@id": "https://plstats.uk/#organization",
+          "@id": "<?= SITE_URL ?>/#organization",
           "name": "PLStats.uk",
-          "url": "https://plstats.uk/",
+          "url": "<?= SITE_URL ?>/",
           "logo": {
             "@type": "ImageObject",
-            "@id": "https://plstats.uk/#logo",
-            "url": "https://plstats.uk/includes/images/plstats-logo-colorful.png",
-            "contentUrl": "https://plstats.uk/includes/images/plstats-logo-colorful.png",
+            "@id": "<?= SITE_URL ?>/#logo",
+            "url": "<?= SITE_URL ?>/includes/images/plstats-logo-colorful.png",
+            "contentUrl": "<?= SITE_URL ?>/includes/images/plstats-logo-colorful.png",
             "width": 512,
             "height": 512,
             "caption": "PLStats.uk Logo"
           },
           "image": {
-            "@id": "https://plstats.uk/#logo"
+            "@id": "<?= SITE_URL ?>/#logo"
           },
           "sameAs": [
             "https://twitter.com/plstats_uk"
@@ -83,52 +83,52 @@ include "includes/functions/db.php";
         },
         {
           "@type": "WebPage",
-          "@id": "https://plstats.uk/#webpage",
-          "url": "https://plstats.uk/",
+          "@id": "<?= SITE_URL ?>/#webpage",
+          "url": "<?= SITE_URL ?>/",
           "name": "plstats | Premier League Stats, Match Commentary & Lineups (2026)",
           "isPartOf": {
-            "@id": "https://plstats.uk/#website"
+            "@id": "<?= SITE_URL ?>/#website"
           },
           "about": {
-            "@id": "https://plstats.uk/#organization"
+            "@id": "<?= SITE_URL ?>/#organization"
           },
           "primaryImageOfPage": {
             "@type": "ImageObject",
-            "@id": "https://plstats.uk/#primaryimage",
-            "url": "https://plstats.uk/includes/images/premier-league-stats-analysis-plstats-uk.webp",
-            "contentUrl": "https://plstats.uk/includes/images/premier-league-stats-analysis-plstats-uk.webp",
+            "@id": "<?= SITE_URL ?>/#primaryimage",
+            "url": "<?= SITE_URL ?>/includes/images/premier-league-stats-analysis-plstats-uk.webp",
+            "contentUrl": "<?= SITE_URL ?>/includes/images/premier-league-stats-analysis-plstats-uk.webp",
             "width": 1200,
             "height": 630,
             "caption": "Premier League Stats & Analysis - PLStats.uk"
           },
           "description": "plstats provides in-depth Premier League statistics, expert match commentary, verified lineups, tactical insights, and team performance analysis. Updated weekly with accurate football data.",
           "breadcrumb": {
-            "@id": "https://plstats.uk/#breadcrumb"
+            "@id": "<?= SITE_URL ?>/#breadcrumb"
           },
           "inLanguage": "en-GB",
           "potentialAction": {
             "@type": "ReadAction",
-            "target": ["https://plstats.uk/"]
+            "target": ["<?= SITE_URL ?>/"]
           }
         },
         {
           "@type": "BreadcrumbList",
-          "@id": "https://plstats.uk/#breadcrumb",
+          "@id": "<?= SITE_URL ?>/#breadcrumb",
           "itemListElement": [{
             "@type": "ListItem",
             "position": 1,
             "name": "Home",
-            "item": "https://plstats.uk/"
+            "item": "<?= SITE_URL ?>/"
           }]
         },
         {
           "@type": "CollectionPage",
-          "@id": "https://plstats.uk/#collection",
-          "url": "https://plstats.uk/",
+          "@id": "<?= SITE_URL ?>/#collection",
+          "url": "<?= SITE_URL ?>/",
           "name": "Premier League Match Coverage & Statistics",
           "description": "Complete Premier League match coverage including statistics, commentary, lineups, and tactical analysis",
           "isPartOf": {
-            "@id": "https://plstats.uk/#website"
+            "@id": "<?= SITE_URL ?>/#website"
           },
           "about": {
             "@type": "SportsOrganization",
@@ -161,7 +161,7 @@ include "includes/functions/db.php";
 
         <div class="feature_grid ">
           <img
-            src="https://plstats.uk/includes/images/premier-league-stats-analysis-plstats-uk.webp"
+            src="<?= SITE_URL ?>/includes/images/premier-league-stats-analysis-plstats-uk.webp"
             alt="Premier League Stats & Analysis - plstats.uk"
             loading="eager" />
 

@@ -30,7 +30,7 @@ function escapeXml($string)
 /* ----------------------------------------
    Configuration
 ---------------------------------------- */
-$baseUrl = 'https://plstats.uk';
+$baseUrl = SITE_URL;
 
 /* ----------------------------------------
    Start XML Output

@@ -155,23 +155,23 @@ $allRoundNumsJson = json_encode($allRoundNums, JSON_THROW_ON_ERROR);
 
   <title>Premier League Fixtures & Results – PLStats.uk</title>
   <meta name="description" content="Premier League fixtures, results and live match coverage – updated with commentary and analysis." />
-  <link rel="stylesheet" href="https://plstats.uk/includes/css/matches.css" />
+  <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/matches.css')) ?>" />
 
   <!-- Canonical -->
-  <link rel="canonical" href="https://plstats.uk/matches/" />
+  <link rel="canonical" href="<?= htmlspecialchars(plstats_url('/matches/')) ?>" />
 
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 
   <!-- Open Graph -->
   <meta property="og:type"        content="website">
   <meta property="og:locale"      content="en_GB">
-  <meta property="og:url"         content="https://plstats.uk/matches/">
+  <meta property="og:url"         content="<?= htmlspecialchars(plstats_url('/matches/')) ?>">
   <meta property="og:title"       content="Premier League Fixtures & Results – PLStats.uk">
   <meta property="og:description" content="Premier League fixtures, results and live match coverage – updated with commentary and analysis.">
 
   <!-- Twitter -->
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:site"        content="https://plstats.uk/">
+  <meta name="twitter:site"        content="<?= htmlspecialchars(plstats_url('/')) ?>">
   <meta name="twitter:title"       content="Premier League Fixtures & Results – PLStats.uk">
   <meta name="twitter:description" content="Premier League fixtures, results and live match coverage – updated with commentary and analysis.">
 
@@ -179,16 +179,16 @@ $allRoundNumsJson = json_encode($allRoundNums, JSON_THROW_ON_ERROR);
   plstats_output_schema([
     plstats_schema_organization(),
     plstats_schema_website(),
-    plstats_schema_breadcrumb('https://plstats.uk/matches/#breadcrumb', [
+    plstats_schema_breadcrumb(plstats_url('/matches/#breadcrumb'), [
       ['name' => 'Home',    'url' => PLSTATS_BASE . '/'],
       ['name' => 'Matches'],
     ]),
     array_merge(
       plstats_schema_collection_page(
-        'https://plstats.uk/matches/',
+        plstats_url('/matches/'),
         'Premier League Matches – Fixtures & Results',
         'Complete Premier League match coverage with fixtures, results, commentary, and statistics.',
-        'https://plstats.uk/matches/#breadcrumb'
+        plstats_url('/matches/#breadcrumb')
       ),
       [
         'about' => [
@@ -259,7 +259,7 @@ $allRoundNumsJson = json_encode($allRoundNums, JSON_THROW_ON_ERROR);
               $score   = $played ? "{$m['HomeTeamScore']} - {$m['AwayTeamScore']}" : "vs";
               $status  = $played ? "FT" : ($m['_ts'] ? date('H:i', $m['_ts']) : '');
               $dateStr = $m['_ts'] ? date('j M Y', $m['_ts']) . ' · ' . date('H:i', $m['_ts']) : '';
-              $matchUrl = "/matches/{$m['_season']}/{$m['Round']}/{$m['HomeTeamSlug']}-vs-{$m['AwayTeamSlug']}/";
+              $matchUrl = plstats_url("/matches/{$m['_season']}/{$m['Round']}/{$m['HomeTeamSlug']}-vs-{$m['AwayTeamSlug']}/");
             ?>
             <a href="<?= htmlspecialchars($matchUrl) ?>"
                class="match_tile"
@@ -270,7 +270,7 @@ $allRoundNumsJson = json_encode($allRoundNums, JSON_THROW_ON_ERROR);
 
               <div class="teams_info">
                 <div class="team">
-                  <img src="https://plstats.uk/<?= htmlspecialchars($m['HomeTeamLogo']) ?>" alt="<?= htmlspecialchars($m['HomeTeamName']) ?>">
+                  <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($m['HomeTeamLogo'], '/'))) ?>" alt="<?= htmlspecialchars($m['HomeTeamName']) ?>">
                   <h3><?= htmlspecialchars($m['HomeTeamName']) ?></h3>
                 </div>
 
@@ -280,7 +280,7 @@ $allRoundNumsJson = json_encode($allRoundNums, JSON_THROW_ON_ERROR);
                 </div>
 
                 <div class="team">
-                  <img src="https://plstats.uk/<?= htmlspecialchars($m['AwayTeamLogo']) ?>" alt="<?= htmlspecialchars($m['AwayTeamName']) ?>">
+                  <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($m['AwayTeamLogo'], '/'))) ?>" alt="<?= htmlspecialchars($m['AwayTeamName']) ?>">
                   <h3><?= htmlspecialchars($m['AwayTeamName']) ?></h3>
                 </div>
               </div>

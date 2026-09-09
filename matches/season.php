@@ -86,7 +86,7 @@ if (!isset($seasonSet[$requestedSeason])) {
 
 // The active season's permanent home is /matches/ — consolidate SEO value there
 if ($requestedSeason === $activeSeason) {
-  header('Location: https://plstats.uk/matches/', true, 301);
+  header('Location: ' . plstats_url('/matches/'), true, 301);
   exit;
 }
 
@@ -156,7 +156,7 @@ $allRoundNumsJson = json_encode($allRoundNums, JSON_THROW_ON_ERROR);
 /* -------------------------------------------------
    SEO metadata
 ------------------------------------------------- */
-$canonicalUrl = "https://plstats.uk/matches/$selectedSeason/";
+$canonicalUrl = plstats_url("/matches/$selectedSeason/");
 $pageTitle    = "Premier League $selectedSeason Season – Fixtures & Results – PLStats.uk";
 $pageDesc     = "Full Premier League $selectedSeason season archive: every fixture, round, and result with scores and match links.";
 ?>
@@ -171,7 +171,7 @@ $pageDesc     = "Full Premier League $selectedSeason season archive: every fixtu
 
   <title><?= htmlspecialchars($pageTitle) ?></title>
   <meta name="description" content="<?= htmlspecialchars($pageDesc) ?>" />
-  <link rel="stylesheet" href="https://plstats.uk/includes/css/matches.css" />
+  <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/matches.css')) ?>" />
 
   <!-- Canonical -->
   <link rel="canonical" href="<?= $canonicalUrl ?>" />
@@ -187,7 +187,7 @@ $pageDesc     = "Full Premier League $selectedSeason season archive: every fixtu
 
   <!-- Twitter -->
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:site"        content="https://plstats.uk/">
+  <meta name="twitter:site"        content="<?= htmlspecialchars(plstats_url('/')) ?>">
   <meta name="twitter:title"       content="<?= htmlspecialchars($pageTitle) ?>">
   <meta name="twitter:description" content="<?= htmlspecialchars($pageDesc) ?>">
 
@@ -277,7 +277,7 @@ $pageDesc     = "Full Premier League $selectedSeason season archive: every fixtu
               $score   = $played ? "{$m['HomeTeamScore']} - {$m['AwayTeamScore']}" : "vs";
               $status  = $played ? "FT" : ($m['_ts'] ? date('H:i', $m['_ts']) : '');
               $dateStr = $m['_ts'] ? date('j M Y', $m['_ts']) . ' · ' . date('H:i', $m['_ts']) : '';
-              $matchUrl = "/matches/{$m['_season']}/{$m['Round']}/{$m['HomeTeamSlug']}-vs-{$m['AwayTeamSlug']}/";
+              $matchUrl = plstats_url("/matches/{$m['_season']}/{$m['Round']}/{$m['HomeTeamSlug']}-vs-{$m['AwayTeamSlug']}/");
             ?>
             <a href="<?= htmlspecialchars($matchUrl) ?>"
                class="match_tile"
@@ -288,7 +288,7 @@ $pageDesc     = "Full Premier League $selectedSeason season archive: every fixtu
 
               <div class="teams_info">
                 <div class="team">
-                  <img src="https://plstats.uk/<?= htmlspecialchars($m['HomeTeamLogo']) ?>" alt="<?= htmlspecialchars($m['HomeTeamName']) ?>">
+                  <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($m['HomeTeamLogo'], '/'))) ?>" alt="<?= htmlspecialchars($m['HomeTeamName']) ?>">
                   <h3><?= htmlspecialchars($m['HomeTeamName']) ?></h3>
                 </div>
 
@@ -298,7 +298,7 @@ $pageDesc     = "Full Premier League $selectedSeason season archive: every fixtu
                 </div>
 
                 <div class="team">
-                  <img src="https://plstats.uk/<?= htmlspecialchars($m['AwayTeamLogo']) ?>" alt="<?= htmlspecialchars($m['AwayTeamName']) ?>">
+                  <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($m['AwayTeamLogo'], '/'))) ?>" alt="<?= htmlspecialchars($m['AwayTeamName']) ?>">
                   <h3><?= htmlspecialchars($m['AwayTeamName']) ?></h3>
                 </div>
               </div>

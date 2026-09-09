@@ -4,13 +4,13 @@ Decisions recorded from repository evidence and the baseline commit `7db2a22` (*
 
 ---
 
-## ADR-001: Keep `db.php` committed; keep credentials private
+## ADR-001: Keep connection bootstrap committed; keep credentials private
 
-**Decision:** Commit `includes/functions/db.php` (connection bootstrap). Keep real credentials in `includes/functions/db.config.php`, which is gitignored. Ship `db.config.example.php` as the template. Deny web access to `db.config.php` via `includes/.htaccess`.
+**Decision:** Commit `includes/functions/db.php` (PDO bootstrap). Keep real credentials out of Git. Originally this used `db.config.php`; see ADR-007 for the current unified `app.config.php` approach.
 
-**Evidence:** `.gitignore` entry for `includes/functions/db.config.php`; `db.php` requires that file and fails closed; example config committed; Apache `<Files "db.config.php"> Require all denied`.
+**Evidence:** Baseline commit `7db2a22`; `.gitignore`; fail-closed loader; Apache deny rules.
 
-**Rationale:** Connection logic and error handling stay shareable across machines; secrets never enter Git history.
+**Rationale:** Connection logic stays shareable; secrets never enter Git history.
 
 ---
 
@@ -48,6 +48,14 @@ Decisions recorded from repository evidence and the baseline commit `7db2a22` (*
 
 ## ADR-006: Match URLs encode season, round, and team slugs
 
-**Decision:** Canonical match URLs are `/matches/{season}/{round}/{home}-vs-{away}/`. PHP resolves the match by round + slugs, verifies season from match date, and 301-redirects to the canonical path when needed.
+**Decision:** Canonical match URLs are `/matches/{season}/{round}/{home}-vs-{away}/`. PHP resolves the match by round + slugs, verifies season from match date, and 301-redirects to the canonical path when needed. Absolute redirects use `SITE_URL`; path comparison uses `SITE_BASE_PATH` via `plstats_request_path()`.
 
-**Evidence:** `.htaccess` rule and `matches/match.php` canonical redirect block.
+**Evidence:** `.htaccess` rule and `matches/match.php` canonical redirect block; `bootstrap.php` helpers.
+
+---
+
+## ADR-007: Centralized environment-aware `app.config.php`
+
+**Decision:** One private config file per machine/environment (`app.config.php`) holds explicit `APP_ENV`, `SITE_URL`, and a nested `db` array. Committed `bootstrap.php` loads it and exposes URL/env helpers **without** opening a database connection. `db.php` requires bootstrap then creates `$pdo`. Environment is never inferred solely from hostname in PHP. Apache HTTPS/non-www rules are gated to the production Host only (Apache cannot read PHP config). Local development must use local MySQL credentials — never production DB credentials on laptops. `robots.txt` remains a static production sitemap URL for now.
+
+**Evidence:** `bootstrap.php`, `app.config.example.php`, updated `db.php`, `.gitignore`, `includes/.htaccess`, root `.htaccess` Host conditions.
