@@ -1,0 +1,12 @@
+---
+description: Project knowledge workflow — repo truth, docs-first, scoped inspection
+alwaysApply: true
+---
+
+# Project knowledge
+
+- **Repository code is the source of truth.** Prefer reading the codebase and `docs/` over assumptions or memory from other machines.
+- **Read relevant docs before major work** — at least `docs/PROJECT.md`, plus `ARCHITECTURE.md`, `DATA_FLOW.md`, `SEO_ARCHITECTURE.md`, `DEVELOPMENT.md`, `DECISIONS.md`, or `CURRENT_STATE.md` as the task requires.
+- **Do not re-analyze the entire repository** unless documentation is missing, contradictory, or the task truly needs a full map.
+- **Inspect only files relevant to the task.** Expand scope only when evidence shows you must.
+- **Use Plan mode** for multi-file or architectural changes before implementing.

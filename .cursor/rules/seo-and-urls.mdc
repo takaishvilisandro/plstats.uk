@@ -1,0 +1,12 @@
+---
+description: SEO and URL stability constraints
+alwaysApply: true
+---
+
+# SEO and URLs
+
+- **Preserve existing public URLs** unless the user explicitly approves a change.
+- **Do not change** canonical logic, `robots.txt`, `sitemap.php`, or schema markup **without explicit SEO review** / approval.
+- **Do not delete indexed pages** (or remove them from routing/sitemap in a way that drops them from the index) **without approval**.
+- When touching match/team URL construction or 301 behaviour, treat it as SEO-critical and confirm intent first.
+- See `docs/SEO_ARCHITECTURE.md` for the current URL and meta contract.
