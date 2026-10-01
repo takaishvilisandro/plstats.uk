@@ -12,8 +12,9 @@ if (empty($breadcrumbs) || !is_array($breadcrumbs)) {
 ?>
 <nav class="breadcrumbs" aria-label="Breadcrumb">
   <ol>
-    <?php foreach ($breadcrumbs as $crumb): ?>
+    <?php foreach ($breadcrumbs as $i => $crumb): ?>
       <li>
+        <?php if ($i > 0): ?><i class="fas fa-chevron-right breadcrumb_sep" aria-hidden="true"></i><?php endif; ?>
         <?php if (!empty($crumb['url'])): ?>
           <a href="<?= htmlspecialchars($crumb['url']) ?>"><?= htmlspecialchars($crumb['name']) ?></a>
         <?php else: ?>

@@ -121,6 +121,135 @@ function plstats_team_logo(PDO $pdo, ?string $logo, string $slug): ?string
   return plstats_url('/' . ltrim($logo, '/'));
 }
 
+/**
+ * Three-letter club code ("MCI"). Teams has no code column, so known clubs use
+ * the broadcast-style code and anything else is derived from the name.
+ */
+function plstats_team_code(string $slug, string $name): string
+{
+  static $codes = [
+    'afc-bournemouth' => 'BOU', 'arsenal' => 'ARS', 'aston-villa' => 'AVL', 'birmingham' => 'BIR',
+    'blackburn' => 'BLB', 'blackpool' => 'BPL', 'bolton' => 'BOL', 'bradford-city' => 'BRA',
+    'brentford' => 'BRE', 'brighton' => 'BHA', 'burnley' => 'BUR', 'cardiff' => 'CAR',
+    'charlton' => 'CHA', 'chelsea' => 'CHE', 'coventry' => 'COV', 'crystal-palace' => 'CRY',
+    'derby' => 'DER', 'everton' => 'EVE', 'fulham' => 'FUL', 'huddersfield' => 'HUD',
+    'hull' => 'HUL', 'ipswich' => 'IPS', 'leeds-united' => 'LEE', 'leicester' => 'LEI',
+    'liverpool' => 'LIV', 'luton' => 'LUT', 'manchester-city' => 'MCI', 'manchester-united' => 'MUN',
+    'middlesbrough' => 'MID', 'millwall' => 'MIL', 'newcastle' => 'NEW', 'norwich' => 'NOR',
+    'nottingham-forest' => 'NFO', 'portsmouth' => 'POR', 'qpr' => 'QPR', 'reading' => 'REA',
+    'sheffield-utd' => 'SHU', 'southampton' => 'SOU', 'stoke' => 'STK', 'sunderland' => 'SUN',
+    'swansea' => 'SWA', 'tottenham' => 'TOT', 'watford' => 'WAT', 'west-brom' => 'WBA',
+    'west-ham-united' => 'WHU', 'wigan' => 'WIG', 'wolves' => 'WOL',
+  ];
+
+  if (isset($codes[$slug])) {
+    return $codes[$slug];
+  }
+
+  $letters = preg_replace('/[^A-Za-z]/', '', $name);
+
+  return strtoupper(substr($letters !== '' ? $letters : $slug, 0, 3));
+}
+
+/**
+ * crest_dark: crests too dark to read on the dark theme (e.g. Tottenham's navy
+ * cockerel). They get a light outline glow (.team_badge--dark). Teams has no
+ * column for this, and adding one is a schema change, so the flag lives here.
+ */
+function plstats_crest_is_dark(string $slug): bool
+{
+  static $dark = ['tottenham' => true];
+
+  return isset($dark[$slug]);
+}
+
+/**
+ * Club badge: the crest, or a three-letter initials circle when the club has
+ * no crest of its own (none stored, or one shared with other clubs).
+ *
+ * @param array $team ['Name' => ..., 'Slug' => ..., 'Logo' => ...]
+ * @param int   $size 28 (lists) or 24 (tables)
+ * @param bool  $lazy lazy-load the crest (below the fold)
+ */
+function team_badge(array $team, int $size = 28, bool $lazy = true): string
+{
+  global $pdo;
+
+  $logo  = plstats_team_logo($pdo, $team['Logo'] ?? null, $team['Slug']);
+  $class = 'team_badge' . ($size === 24 ? ' team_badge--sm' : '');
+
+  if ($logo) {
+    if (plstats_crest_is_dark($team['Slug'])) {
+      $class .= ' team_badge--dark';
+    }
+    return '<span class="' . $class . '"><img src="' . htmlspecialchars($logo) . '" alt="" width="' . $size
+      . '" height="' . $size . '"' . ($lazy ? ' loading="lazy"' : '') . '></span>';
+  }
+
+  return '<span class="' . $class . ' team_badge--initials" aria-hidden="true">'
+    . htmlspecialchars(plstats_team_code($team['Slug'], $team['Name'])) . '</span>';
+}
+
+/**
+ * One result or fixture row (.match_row), shared by the homepage and the
+ * matches hub. A result shows its score and "FT" only when $isResult and the
+ * row's HasDetails are set; otherwise the kick-off time shows.
+ *
+ * Keys: Date, Round, HomeName, HomeSlug, HomeLogo, AwayName, AwaySlug, AwayLogo,
+ * HomeTeamScore, AwayTeamScore, HasDetails.
+ */
+function plstats_match_row(array $m, bool $isResult): string
+{
+  $url  = plstats_match_url($m['Date'], $m['Round'], $m['HomeSlug'], $m['AwaySlug']);
+  $time = date('H:i', strtotime($m['Date']));
+
+  $homeClass = $awayClass = '';
+  $home = (int)($m['HomeTeamScore'] ?? 0);
+  $away = (int)($m['AwayTeamScore'] ?? 0);
+  $showScore = $isResult && !empty($m['HasDetails'])
+    && isset($m['HomeTeamScore'], $m['AwayTeamScore']);
+  if ($showScore) {
+    if ($home !== $away) {
+      $homeClass = $home > $away ? ' is_winner' : ' is_loser';
+      $awayClass = $home > $away ? ' is_loser' : ' is_winner';
+    }
+  }
+
+  $homeBadge = team_badge(['Name' => $m['HomeName'], 'Slug' => $m['HomeSlug'], 'Logo' => $m['HomeLogo']]);
+  $awayBadge = team_badge(['Name' => $m['AwayName'], 'Slug' => $m['AwaySlug'], 'Logo' => $m['AwayLogo']]);
+
+  if ($showScore) {
+    $mid = '<span class="match_score num">' . $home . '–' . $away . '</span>'
+      . '<span class="match_status num">FT<span class="match_status_extra"> · ' . $time . '</span></span>';
+    $label = $m['HomeName'] . ' ' . $home . '–' . $away . ' ' . $m['AwayName'];
+  } else {
+    $mid   = '<span class="match_time num">' . $time . '</span>';
+    $label = "{$m['HomeName']} v {$m['AwayName']}, kick-off $time";
+  }
+
+  return '<a class="match_row' . ($showScore ? '' : ' match_row--fixture') . '" href="' . htmlspecialchars($url) . '" aria-label="' . htmlspecialchars($label) . '">'
+    . '<span class="match_side match_side--home' . $homeClass . '"><span class="match_name">' . htmlspecialchars($m['HomeName']) . '</span>' . $homeBadge . '</span>'
+    . '<span class="match_mid">' . $mid . '</span>'
+    . '<span class="match_side match_side--away' . $awayClass . '">' . $awayBadge . '<span class="match_name">' . htmlspecialchars($m['AwayName']) . '</span></span>'
+    . '</a>';
+}
+
+/**
+ * Initials for a person ("Erling Haaland" → "EH"), used where no photo exists.
+ */
+function plstats_initials(string $name): string
+{
+  $parts = preg_split('/[\s-]+/u', trim($name), -1, PREG_SPLIT_NO_EMPTY);
+  if (!$parts) {
+    return '';
+  }
+
+  $first = mb_substr($parts[0], 0, 1);
+  $last  = count($parts) > 1 ? mb_substr(end($parts), 0, 1) : '';
+
+  return mb_strtoupper($first . $last);
+}
+
 /* ----------------------------------------
    Status codes
 ---------------------------------------- */

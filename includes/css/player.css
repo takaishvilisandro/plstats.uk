@@ -1,0 +1,566 @@
+/* ==================================================
+   Player profile (/players/{slug}/)
+   Mobile: one column. Desktop: header, KPI row, recent
+   matches + aside (rankings, more stats), season stats
+   grid, seasons table.
+================================================== */
+
+/* ── Entity header ──────────────────────────────────────────── */
+.entity_header {
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+}
+
+/* Mobile: avatar + title side by side, fact chips across the full card */
+.entity_identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "avatar title"
+    "facts facts";
+  align-items: center;
+  column-gap: var(--space-4);
+}
+
+.entity_avatar {
+  grid-area: avatar;
+}
+
+.entity_main {
+  display: contents;
+}
+
+.entity_title {
+  grid-area: title;
+}
+
+.entity_facts {
+  grid-area: facts;
+}
+
+.entity_avatar {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  border: 2px solid rgba(57, 169, 151, 0.4);
+  color: var(--brand);
+  font-weight: 800;
+  font-size: 22px;
+}
+
+.entity_shirt {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 2px solid var(--dark);
+  color: var(--text-primary);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+.entity_title {
+  display: flex;
+  flex-direction: column;
+  padding-left: 0;
+  margin: 0;
+}
+
+.entity_title::before {
+  display: none;
+}
+
+.entity_name {
+  font-size: var(--fs-h1-m);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  overflow-wrap: break-word;
+}
+
+.entity_season {
+  margin-top: 4px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Fact chips */
+.entity_facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  padding: 0;
+  margin: var(--space-3) 0 0;
+}
+
+/* .fact_chip base lives in components.css */
+
+.fact_chip--link {
+  padding-left: 6px;
+}
+
+.fact_chip--link:hover {
+  background: var(--brand-soft-strong);
+  color: var(--brand);
+}
+
+.entity_updated {
+  display: flex;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+/* ── KPI row ────────────────────────────────────────────────── */
+.player_kpis {
+  margin-top: var(--space-3);
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.player_layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+/* Mobile order: rankings, recent, season stats, seasons, more stats */
+.player_side {
+  display: contents;
+}
+
+.player_rankings { order: 1; }
+.player_recent { order: 2; }
+.player_stats { order: 3; }
+.player_seasons { order: 4; }
+.player_more { order: 5; }
+
+.section_title_season {
+  font-weight: 700;
+}
+
+/* ── League rankings ────────────────────────────────────────── */
+.rank_list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.rank_item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.rank_pos {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--brand);
+}
+
+.rank_label {
+  margin-top: 6px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+.rank_value {
+  margin-top: 4px;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+
+/* ── Season stats ───────────────────────────────────────────── */
+.stat_tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0 0 2px;
+  background: none;
+  border-radius: 0;
+  scrollbar-width: none;
+}
+
+.stat_tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.stat_tabs .view_tab {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--dark);
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.stat_tabs .view_tab--active,
+.stat_tabs .view_tab--active:hover {
+  background: var(--brand-soft-strong);
+  border-color: rgba(57, 169, 151, 0.5);
+  color: var(--brand);
+}
+
+.stat_panels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* With JS (mobile): only the active panel, no panel headings */
+.js_tabs .stat_panel {
+  display: none;
+}
+
+.js_tabs .stat_panel.is_active {
+  display: block;
+}
+
+.js_tabs .stat_panel_title {
+  display: none;
+}
+
+.stat_panel_title {
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--surface-sunken);
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+
+.stat_row {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.stat_panel_title + .stat_row,
+.js_tabs .stat_panel .stat_row:first-of-type {
+  border-top: none;
+}
+
+.stat_row_main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.stat_row_label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  row-gap: 4px;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.stat_row_label abbr {
+  text-decoration: none;
+  cursor: help;
+}
+
+.rank_tag {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+.stat_row_values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.stat_row_total {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.stat_row_per90 {
+  margin-top: 2px;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+
+.stat_bar {
+  display: flex;
+  align-items: center;
+  column-gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.stat_bar_track {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.stat_bar_fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+}
+
+.stat_bar_pct {
+  min-width: 44px;
+  text-align: right;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* ── Premier League seasons table ───────────────────────────── */
+.player_seasons .stat_table_wrap {
+  margin-top: 0;
+  border-radius: var(--radius-lg);
+}
+
+.seasons_table th,
+.seasons_table td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  font-size: var(--fs-md);
+}
+
+.seasons_table thead th {
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.seasons_table .st_name {
+  background: var(--dark);
+  font-weight: 700;
+}
+
+.seasons_table thead .st_name {
+  background: var(--surface-sunken);
+}
+
+.seasons_table .st_name a {
+  color: var(--brand);
+}
+
+.seasons_table .col_desktop {
+  display: none;
+}
+
+/* ── Desktop ────────────────────────────────────────────────── */
+@media screen and (min-width: 820px) {
+  .entity_header {
+    position: relative;
+    padding: var(--space-6);
+  }
+
+  .entity_identity {
+    grid-template-areas:
+      "avatar title"
+      "avatar facts";
+    column-gap: var(--space-6);
+    padding-right: 220px;
+  }
+
+  .entity_title {
+    align-self: end;
+  }
+
+  .entity_facts {
+    align-self: start;
+  }
+
+  .entity_avatar {
+    width: 96px;
+    height: 96px;
+    font-size: 30px;
+  }
+
+  .entity_shirt {
+    min-width: 28px;
+    height: 28px;
+    font-size: var(--fs-sm);
+  }
+
+  .entity_title {
+    display: block;
+  }
+
+  .entity_name {
+    font-size: var(--fs-h1-d);
+  }
+
+  .entity_season {
+    margin-left: 6px;
+    font-size: var(--fs-xl);
+  }
+
+  .entity_updated {
+    position: absolute;
+    top: var(--space-6);
+    right: var(--space-6);
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .entity_updated_season {
+    display: none;
+  }
+
+  .player_kpis {
+    margin-top: var(--space-4);
+  }
+
+  .player_layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    grid-template-areas:
+      "recent side"
+      "stats stats"
+      "seasons seasons";
+    column-gap: var(--space-6);
+    row-gap: var(--space-7);
+    align-items: start;
+    margin-top: var(--space-7);
+  }
+
+  .player_recent { grid-area: recent; }
+  .player_stats { grid-area: stats; }
+  .player_seasons { grid-area: seasons; }
+
+  .player_side {
+    grid-area: side;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  /* Without recent matches the aside takes the full width */
+  .player_layout > .player_side:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .section_title_season {
+    display: none;
+  }
+
+  /* Rankings: list card */
+  .rank_list {
+    display: block;
+    background: var(--dark);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .rank_item {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--space-3);
+    padding: 12px 16px;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rank_item:last-child {
+    border-bottom: none;
+  }
+
+  .rank_pos {
+    padding: 5px 0;
+    border-radius: var(--radius-sm);
+    background: var(--brand-soft);
+    font-size: 15px;
+    text-align: center;
+  }
+
+  .rank_label {
+    margin: 0;
+    font-size: var(--fs-md);
+  }
+
+  .rank_value {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  /* Season stats: every category as a card, no tabs */
+  .stat_tabs,
+  .stat_tabs[hidden] {
+    display: none;
+  }
+
+  .stat_panels {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  .js_tabs .stat_panel {
+    display: block;
+  }
+
+  .js_tabs .stat_panel_title {
+    display: block;
+  }
+
+  .js_tabs .stat_panel .stat_row:first-of-type {
+    border-top: 1px solid var(--border);
+  }
+
+  .stat_panel_title + .stat_row {
+    border-top: none;
+  }
+
+  .seasons_table .col_desktop {
+    display: table-cell;
+  }
+}

@@ -1,71 +1,58 @@
 <?php
-if (!defined('SITE_URL')) {
-  require_once __DIR__ . '/../functions/bootstrap.php';
-}
-$_navPath = plstats_request_path();
+require_once __DIR__ . '/../functions/nav.php';
+
+// Search stays hidden until it actually works (no dead controls).
+$search_enabled = false;
+
+// Main sections. Stats / Compare are added here once those pages exist.
+$_navItems = [
+  ['url' => '/matches/', 'label' => 'Matches', 'title' => 'Matches',              'icon' => 'fa-calendar-alt'],
+  ['url' => '/table/',   'label' => 'Table',   'title' => 'Premier League Table', 'icon' => 'fa-list-ol'],
+  ['url' => '/players/', 'label' => 'Players', 'title' => 'Players',              'icon' => 'fa-user'],
+  ['url' => '/teams/',   'label' => 'Teams',   'title' => 'Teams',                'icon' => 'fa-shield-alt'],
+];
+
+$_seasonLabel = plstats_nav_season_label($pdo ?? null);
 ?>
 <header class="topbar">
   <div class="container topbar_container">
     <div class="logo">
       <a href="<?= htmlspecialchars(plstats_url('/')) ?>">
-        <img src="<?= htmlspecialchars(plstats_url('/includes/images/plstats-logo-colorful.png')) ?>" alt="PL Stats Logo">
+        <img src="<?= htmlspecialchars(plstats_url('/includes/images/plstats-logo-colorful.png')) ?>" alt="PL Stats Logo" width="88" height="30">
       </a>
     </div>
 
-    <div class="search-bar">
-      <input type="text" placeholder="Search players, clubs or stats" />
-    </div>
-
-    <div class="user-actions">
-      <div class="mobile_burger_container">
-        <button class="burger" aria-label="Open menu">
-          <i class="fas fa-bars"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MOBILE NAV (SLIDE DOWN TARGET) -->
-  <div class="mobile_navigation container" id="mobileNavigation">
-    <nav class="mobile_nav">
+    <!-- Desktop navigation -->
+    <nav class="top_nav" aria-label="Main">
       <ul>
-        <li><a href="<?= htmlspecialchars(plstats_url('/')) ?>" title="Home"<?= $_navPath === '/' ? ' class="active"' : '' ?>>Home</a></li>
-        <li><a href="<?= htmlspecialchars(plstats_url('/matches/')) ?>" title="Matches"<?= str_starts_with($_navPath, '/matches/') ? ' class="active"' : '' ?>>Matches</a></li>
-        <li><a href="<?= htmlspecialchars(plstats_url('/table/')) ?>" title="Premier League Table"<?= str_starts_with($_navPath, '/table/') ? ' class="active"' : '' ?>>Table</a></li>
-        <li><a href="<?= htmlspecialchars(plstats_url('/players/')) ?>" title="Players"<?= str_starts_with($_navPath, '/players/') ? ' class="active"' : '' ?>>Players</a></li>
-        <li><a href="<?= htmlspecialchars(plstats_url('/teams/')) ?>" title="Teams"<?= str_starts_with($_navPath, '/teams/') ? ' class="active"' : '' ?>>Teams</a></li>
-        <li><a href="<?= htmlspecialchars(plstats_url('/author/')) ?>" title="About the Author"<?= str_starts_with($_navPath, '/author/') ? ' class="active"' : '' ?>>About</a></li>
+        <?php foreach ($_navItems as $_item): ?>
+          <li>
+            <a href="<?= htmlspecialchars(plstats_url($_item['url'])) ?>" title="<?= htmlspecialchars($_item['title']) ?>"<?= nav_is_active($_item['url']) ? ' class="active" aria-current="page"' : '' ?>><?= htmlspecialchars($_item['label']) ?></a>
+          </li>
+        <?php endforeach; ?>
       </ul>
     </nav>
+
+    <?php if ($search_enabled): ?>
+      <div class="search-bar">
+        <input type="text" placeholder="Search players, clubs or stats" />
+      </div>
+    <?php endif; ?>
+
+    <?php if ($_seasonLabel !== ''): ?>
+      <span class="season_pill num"><span class="season_pill_prefix">Season </span><?= htmlspecialchars($_seasonLabel) ?></span>
+    <?php endif; ?>
   </div>
 </header>
 
-<script>
-  $(function() {
-    $('.burger').on('click', function() {
-      const $icon = $(this).find('i');
-      const $menu = $('#mobileNavigation');
-
-      $menu.stop(true, true).slideToggle(250);
-
-      // Toggle icon
-      if ($icon.hasClass('fa-bars')) {
-        $icon
-          .removeClass('fa-bars')
-          .addClass('fa-times active');
-      } else {
-        $icon
-          .removeClass('fa-times active')
-          .addClass('fa-bars');
-      }
-    });
-
-    // Optional: reset icon when clicking a link
-    $('.mobile_nav a').on('click', function() {
-      $('#mobileNavigation').slideUp(200);
-      $('.burger i')
-        .removeClass('fa-times active')
-        .addClass('fa-bars');
-    });
-  });
-</script>
+<!-- Mobile bottom tab bar -->
+<nav class="bottom_nav" aria-label="Main">
+  <?php foreach (array_merge([['url' => '/', 'label' => 'Home', 'title' => 'Home', 'icon' => 'fa-home']], $_navItems) as $_item):
+    $_active = nav_is_active($_item['url']);
+  ?>
+    <a href="<?= htmlspecialchars(plstats_url($_item['url'])) ?>" title="<?= htmlspecialchars($_item['title']) ?>" class="bottom_nav_item<?= $_active ? ' active' : '' ?>"<?= $_active ? ' aria-current="page"' : '' ?>>
+      <span class="bottom_nav_icon"><i class="fas <?= $_item['icon'] ?>" aria-hidden="true"></i></span>
+      <span class="bottom_nav_label"><?= htmlspecialchars($_item['label']) ?></span>
+    </a>
+  <?php endforeach; ?>
+</nav>

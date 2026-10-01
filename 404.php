@@ -7,7 +7,7 @@ require_once __DIR__ . '/includes/functions/bootstrap.php';
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>404 Not Found – plstats.uk</title>
   <meta name="description" content="Page not found on plstats.uk. Return to our homepage to explore trusted Non-GamStop casino reviews and guides.">
 

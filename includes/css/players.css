@@ -1,0 +1,822 @@
+/* ==================================================
+   Players directory (/players/)
+   Below 1024px: sticky controls + club accordions, the
+   table restyled as a list. From 1024px: sticky sidebar
+   + open club sections with a real table.
+   Every player link is in the HTML; filters only hide.
+================================================== */
+
+/* ── Header ─────────────────────────────────────────────────── */
+.players_dir_title {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding-left: 0;
+}
+
+.players_dir_title::before {
+  display: none;
+}
+
+.players_dir_title .entity_name {
+  font-size: var(--fs-h1-m);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.players_dir_title .entity_season {
+  margin-top: 4px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.players_dir_header .updated_label {
+  margin-top: var(--space-2);
+}
+
+/* ── Controls (sticky under the top bar) ────────────────────── */
+.players_controls {
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: 30;
+  margin: var(--space-3) -16px 0;
+  padding: 10px 16px;
+  background: var(--dark-secondary);
+  border-bottom: 1px solid transparent;
+}
+
+.players_controls[hidden] {
+  display: none;
+}
+
+.players_controls.is_stuck {
+  border-bottom-color: var(--border-strong);
+}
+
+.players_sentinel {
+  height: 1px;
+}
+
+.players_search {
+  position: relative;
+  display: block;
+}
+
+.players_search i {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  margin-top: -7px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.players_search input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 14px 0 44px;
+  background: var(--dark);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  font-size: 15px;
+}
+
+.players_search input::placeholder {
+  color: var(--text-secondary);
+}
+
+.players_search input:focus-visible,
+.players_select select:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.players_filter_row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.players_select {
+  position: relative;
+  flex: 0 0 130px;
+}
+
+.players_select select {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 30px 0 12px;
+  background: var(--dark);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.players_select_icon {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  margin-top: -6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.players_label {
+  display: none;
+}
+
+/* Position: segmented control */
+.players_pos {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
+  min-width: 0;
+  padding: 4px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.players_pos_option {
+  position: relative;
+  display: flex;
+}
+
+.players_pos_option input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.players_pos_option span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.players_pos_option input:checked + span {
+  background: var(--brand);
+  color: var(--dark);
+}
+
+.players_pos_option input:focus-visible + span {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Club jump chips (scroll sideways) */
+.club_jump {
+  display: flex;
+  gap: 6px;
+  margin: var(--space-2) -16px 0;
+  padding: 0 16px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.club_jump::-webkit-scrollbar {
+  display: none;
+}
+
+.club_jump_link {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  column-gap: 6px;
+  min-height: 36px;
+  padding: 0 12px 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--dark);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.club_jump_link .team_badge {
+  width: 24px;
+  height: 24px;
+}
+
+.club_jump_link.is_active {
+  background: var(--brand-soft);
+  border-color: rgba(57, 169, 151, 0.5);
+  color: var(--brand);
+}
+
+/* ── Status and empty result ────────────────────────────────── */
+.players_status {
+  margin: 0 0 var(--space-3);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.players_status_link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--brand);
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.players_empty {
+  padding: var(--space-6) 0;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.players_empty[hidden] {
+  display: none;
+}
+
+/* ── Club sections ──────────────────────────────────────────── */
+.players_main {
+  margin-top: var(--space-4);
+  min-width: 0;
+}
+
+.players_clubs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.club_section {
+  overflow: visible;
+  scroll-margin-top: calc(var(--topbar-h) + 190px);
+}
+
+.club_section[hidden] {
+  display: none;
+}
+
+.club_head {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 20px;
+  grid-template-areas:
+    "crest title chev"
+    "crest meta chev";
+  align-items: center;
+  column-gap: var(--space-3);
+  min-height: 64px;
+  padding: 12px 16px;
+}
+
+.club_crest {
+  grid-area: crest;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--dark-secondary);
+}
+
+.club_crest .team_badge {
+  width: 26px;
+  height: 26px;
+}
+
+.club_crest .team_badge--initials {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: inherit;
+  background: none;
+}
+
+.club_title {
+  grid-area: title;
+  margin: 0;
+  padding: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.club_title::before {
+  display: none;
+}
+
+.club_title a {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.club_meta {
+  grid-area: meta;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+
+/* The whole header toggles the accordion */
+.club_toggle {
+  grid-area: chev;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.club_toggle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.club_toggle:focus-visible {
+  outline: none;
+}
+
+.club_toggle:focus-visible::after {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+  border-radius: var(--radius-lg);
+}
+
+.club_toggle[hidden] {
+  display: none;
+}
+
+.club_toggle i {
+  transition: transform 0.15s;
+}
+
+.club_toggle[aria-expanded="true"] i {
+  transform: rotate(180deg);
+}
+
+.club_body {
+  border-top: 1px solid var(--border);
+}
+
+.club_body[hidden] {
+  display: none;
+}
+
+/* ── Table restyled as a list (below 1024px) ────────────────── */
+.players_table,
+.players_table tbody,
+.players_table tr,
+.players_table th {
+  display: block;
+}
+
+.players_table thead,
+.players_table td {
+  display: none;
+}
+
+.players_table[hidden],
+.players_table tbody[hidden],
+.players_table tr[hidden] {
+  display: none;
+}
+
+.players_table .pos_group_row th {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.players_table .card_subhead {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+
+.players_table th.st_name {
+  position: static;
+  padding: 0;
+  white-space: normal;
+  border-bottom: 1px solid var(--border);
+}
+
+.player_link {
+  display: grid !important;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-3);
+  min-height: 60px;
+  padding: 10px 16px;
+  text-decoration: none;
+}
+
+.player_link:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.player_avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+
+.player_text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.player_name {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  overflow-wrap: break-word;
+}
+
+.player_meta {
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.player_pills {
+  display: flex;
+  gap: 4px;
+}
+
+.player_pill {
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+
+.player_pill--g {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+/* ── Yet to play ────────────────────────────────────────────── */
+.yet_to_play {
+  padding: 14px 16px 16px;
+  background: var(--surface-sunken);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.yet_to_play[hidden] {
+  display: none;
+}
+
+.yet_title {
+  margin: 0 0 10px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.yet_list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.yet_list li[hidden] {
+  display: none;
+}
+
+.yet_list a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--dark);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.yet_list a:hover {
+  border-color: rgba(57, 169, 151, 0.5);
+}
+
+/* ── Desktop (≥ 1024px): sidebar + open sections + real table ── */
+@media screen and (min-width: 1024px) {
+  .players_dir_title {
+    display: block;
+  }
+
+  .players_dir_title .entity_name {
+    font-size: var(--fs-h1-d);
+  }
+
+  .players_dir_title .entity_season {
+    margin-left: 8px;
+    font-size: 22px;
+  }
+
+  .players_layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: var(--space-6);
+    align-items: start;
+    margin-top: var(--space-6);
+  }
+
+  .players_controls {
+    top: 88px;
+    margin: 0;
+    padding: 18px;
+    background: var(--dark);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+  }
+
+  .players_controls.is_stuck {
+    border-color: var(--border);
+  }
+
+  .players_search input {
+    min-height: 44px;
+    border-radius: 12px;
+  }
+
+  .players_filter_row {
+    display: block;
+    margin-top: var(--space-4);
+  }
+
+  .players_select {
+    display: none;
+  }
+
+  .players_label {
+    display: block;
+    margin: 0 0 8px;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .players_label--clubs {
+    margin-top: var(--space-4);
+  }
+
+  .players_pos_option span {
+    min-height: 34px;
+    font-size: var(--fs-sm);
+  }
+
+  .club_jump {
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .club_jump_link {
+    min-height: 36px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    font-size: var(--fs-md);
+  }
+
+  .club_jump_link:hover {
+    background: var(--surface-sunken);
+  }
+
+  .club_jump_link .team_badge {
+    width: 20px;
+    height: 20px;
+  }
+
+  .players_main {
+    margin-top: 0;
+  }
+
+  .players_clubs {
+    gap: var(--space-5);
+  }
+
+  .club_section {
+    border-radius: var(--radius-xl);
+    scroll-margin-top: 88px;
+  }
+
+  .club_head {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-areas: "crest title meta";
+    column-gap: var(--space-4);
+    padding: 16px 22px;
+  }
+
+  .club_crest {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .club_crest .team_badge {
+    width: 32px;
+    height: 32px;
+  }
+
+  .club_title {
+    font-size: 20px;
+  }
+
+  .club_title a:hover {
+    color: var(--brand);
+  }
+
+  .club_meta {
+    font-size: 13px;
+  }
+
+  /* Always open on desktop */
+  .club_toggle {
+    display: none !important;
+  }
+
+  .club_body[hidden] {
+    display: block;
+  }
+
+  /* Back to a real table */
+  .players_table {
+    display: table;
+  }
+
+  .players_table thead {
+    display: table-header-group;
+  }
+
+  .players_table tbody {
+    display: table-row-group;
+  }
+
+  .players_table tr {
+    display: table-row;
+  }
+
+  .players_table th,
+  .players_table td {
+    display: table-cell;
+  }
+
+  .players_table[hidden],
+  .players_table tbody[hidden],
+  .players_table tr[hidden] {
+    display: none;
+  }
+
+  /* Position groups: the Position column carries this on desktop */
+  .players_table .pos_group_row {
+    display: none;
+  }
+
+  .players_table thead th {
+    position: sticky;
+    top: 64px;
+    z-index: 2;
+  }
+
+  .players_table th.st_name {
+    padding: 8px 10px 8px 20px;
+    white-space: nowrap;
+  }
+
+  .player_link {
+    display: flex !important;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .player_link:hover {
+    background: none;
+  }
+
+  .player_link:hover .player_name {
+    color: var(--brand);
+  }
+
+  .player_avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 11px;
+  }
+
+  .player_name {
+    font-size: var(--fs-md);
+  }
+
+  .player_meta,
+  .player_pills {
+    display: none;
+  }
+
+  .players_table td {
+    padding: 12px 10px;
+  }
+
+  .players_table td:last-child,
+  .players_table th:last-child {
+    padding-right: 22px;
+  }
+
+  .pos_pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--surface-raised);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+
+  .players_table .is_goal {
+    color: var(--brand);
+    font-weight: 800;
+  }
+
+  .players_table .is_hit {
+    font-weight: 800;
+  }
+
+  .players_table .is_zero {
+    color: var(--text-secondary);
+  }
+
+  .yet_to_play {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 14px 22px;
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  }
+
+  .yet_title {
+    margin: 0;
+  }
+}
+
+/* Tabular figures for the whole table (instead of a class on every cell) */
+.players_table,
+.player_meta,
+.player_pill {
+  font-variant-numeric: tabular-nums;
+}
+
+.players_table .col_pos {
+  text-align: left;
+}
+
+.players_table .pos_group_row th {
+  text-align: left;
+}

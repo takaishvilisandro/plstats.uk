@@ -1,220 +1,414 @@
-/* =============== MATCHES INDEX PAGE =============== */
+/* ==================================================
+   Matches hub (/matches/ and /matches/{season}/)
+   Rows use the shared .match_row (components.css).
+   No fixed heights and no hover border changes:
+   rows grow with wrapped names; focus is an outline.
+================================================== */
 
-/* ── Filter bar ──────────────────────────────────────────── */
-.matches_filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-  padding: 14px 16px;
-  background: var(--dark);
-  border-radius: 10px;
-  margin: 15px 0px 0px 0px;
-}
-
-.matches_filter_group {
+/* ── Header ─────────────────────────────────────────────────── */
+.hub_header {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-4);
 }
 
-.matches_filter_label {
-  font-size: 0.7rem;
+.hub_title {
+  margin: 0;
+  padding-left: 0;
+  font-size: var(--fs-h1-m);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.hub_title::before {
+  display: none;
+}
+
+.hub_title_block .updated_label {
+  margin-top: var(--space-2);
+}
+
+/* ── Filters ────────────────────────────────────────────────── */
+.hub_filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.hub_select {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+/* Only one select (single-season data): it takes the full row */
+.hub_select:only-of-type {
+  grid-column: 1 / -1;
+}
+
+.hub_select_label {
+  position: absolute;
+  top: 9px;
+  left: 14px;
+  font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: rgba(255, 255, 255, 0.38);
+  color: var(--text-secondary);
+  pointer-events: none;
 }
 
-.matches_filter_select {
-  height: 36px;
-  padding: 0 10px;
-  min-width: 170px;
-  background: var(--dark-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 7px;
+.hub_select select {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-height: 52px;
+  padding: 22px 36px 8px 14px;
+  background: var(--dark);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
   color: var(--text-primary);
   font-family: var(--font-primary);
-  font-size: 0.87rem;
+  font-size: var(--fs-md);
+  font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s;
 }
 
-.matches_filter_select:focus {
-  outline: none;
-  border-color: var(--brand);
+.hub_select select:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
-/* ── Matches section ─────────────────────────────────────── */
-.matches_section {
+.hub_select_icon {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  margin-top: -6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+/* Status: native radios styled as the segmented control */
+.hub_status {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 4px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.hub_status_option {
+  position: relative;
+  display: flex;
+}
+
+.hub_status_option input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.hub_status_option span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hub_status_option span:hover {
+  color: var(--text-primary);
+}
+
+.hub_status_option input:checked + span {
+  background: var(--brand);
+  color: var(--dark);
+  font-weight: 700;
+}
+
+.hub_status_option input:focus-visible + span {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.hub_apply {
+  grid-column: 1 / -1;
+  min-height: 44px;
+  border: 1px solid rgba(57, 169, 151, 0.5);
+  border-radius: var(--radius-pill);
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-family: var(--font-primary);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.js_autosubmit .hub_apply {
+  display: none;
+}
+
+/* ── Rounds ─────────────────────────────────────────────────── */
+.hub_rounds {
   display: flex;
   flex-direction: column;
+  gap: var(--space-6);
+  margin-top: var(--space-4);
 }
 
-.match_date_header {
-  color: var(--text-secondary);
-  font-size: 16px;
-  margin-bottom: 10px;
-  letter-spacing: 0.3px;
+/* With JS, rounds beyond the first ones wait for "Load earlier rounds" */
+.js_reveal .hub_round.is_extra:not(.is_shown) {
+  display: none;
 }
 
-.match_tiles_row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.match_tile {
-  flex: 1 1 calc(25% - 12px);
-  background-color: var(--dark);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
-  text-align: center;
-  padding: 15px 20px;
-  text-decoration: none;
-  color: var(--text-primary);
-  transition: all 0.25s ease;
-}
-
-.match_tile:hover {
-  border-color: var(--brand);
-  transform: translateY(-3px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
-}
-
-/* TEAMS & SCORE */
-.teams_row {
+.hub_round_head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  column-gap: 10px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
-.team_side {
+.hub_round_head .section_title {
+  font-size: var(--fs-xl);
+}
+
+.hub_round_head .section_title:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 4px;
+}
+
+.hub_round_meta {
   display: flex;
   align-items: center;
-  column-gap: 10px;
-}
-
-.team_badge {
-  width: 60px;
-  height: 60px;
-  object-fit: contain;
-  border-radius: 50%;
-  background: var(--dark-secondary);
-  padding: 10px;
-}
-
-.team_name {
-  font-size: 16px;
-  color: var(--text-primary);
-  line-height: 1;
-}
-
-.score_center {
-  font-size: 16px;
-  color: #fff;
-  min-width: 40px;
-  text-align: center;
-  letter-spacing: 2px;
-}
-
-/* STATUS */
-.match_status {
-  margin-top: 5px;
-  font-size: 14px;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
   color: var(--text-secondary);
 }
 
-/* Date headings */
-.match_date_header {
-  color: var(--text-secondary);
-  font-size: 15px;
-  margin: 20px 0 10px 0;
+.round_pill {
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-/* ── Match card: date line ───────────────────────────────── */
-.match_tile_date {
-  margin-top: 9px;
-  font-size: 0.76rem;
-  color: var(--text-secondary);
-  opacity: 0.75;
-  text-align: center;
-  letter-spacing: 0.02em;
+.round_pill--upcoming,
+.round_pill--in_progress {
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 
-/* ── Load More ───────────────────────────────────────────── */
-.load_more_wrap {
+.round_pill--complete {
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+}
+
+.hub_round_card {
+  border-radius: var(--radius-lg);
+}
+
+.hub_day {
+  margin: 0;
+}
+
+.hub_day_rows .match_row {
+  border-top: 1px solid var(--border);
+  border-bottom: none;
+}
+
+.hub_round_card .match_row:hover {
+  background: var(--surface-sunken);
+}
+
+.hub_round_card .match_row:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.match_row--fixture .match_side {
+  font-weight: 600;
+}
+
+/* Results: winner bold, loser muted */
+.hub_round_card .match_side.is_winner {
+  font-weight: 700;
+}
+
+.hub_round_card .match_side.is_loser {
+  font-weight: 500;
+}
+
+/* ── Load earlier rounds ────────────────────────────────────── */
+.hub_more_wrap {
   display: flex;
   justify-content: center;
-  margin: 4px 0 28px;
+  margin-top: var(--space-6);
 }
 
-.load_more_btn {
-  padding: 0.55rem 2rem;
-  background: var(--dark);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+.hub_more {
+  min-height: 48px;
+  padding: 0 28px;
+  border: 1px solid rgba(57, 169, 151, 0.5);
+  border-radius: var(--radius-pill);
+  background: var(--brand-soft);
   color: var(--brand);
   font-family: var(--font-primary);
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: 700;
   cursor: pointer;
-  transition:
-    border-color 0.15s,
-    background 0.15s;
 }
 
-.load_more_btn:hover {
-  border-color: var(--brand);
-  background: rgba(57, 169, 151, 0.07);
+.hub_more[hidden] {
+  display: none;
 }
 
-/* ── Responsive grid ─────────────────────────────────────── */
-@media screen and (max-width: 992px) {
-  .match_tile {
-    flex: 1 1 calc(50% - 10px);
+.hub_empty {
+  margin-top: var(--space-6);
+  color: var(--text-secondary);
+}
+
+.hub_empty a {
+  color: var(--brand);
+}
+
+/* ── Mobile: round meta as text, not a pill ─────────────────── */
+@media screen and (max-width: 819.98px) {
+  .round_pill {
+    padding: 0;
+    background: none !important;
+    color: var(--text-secondary) !important;
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+
+  .round_pill::before {
+    content: "· ";
   }
 }
 
-@media screen and (max-width: 768px) {
-  .match_tile {
-    flex: 1 1 calc(50% - 10px);
-  }
-}
-
-@media screen and (max-width: 620px) {
-  .matches_filter_group {
-    flex: 1 1 100%;
-  }
-
-  .matches_filter_select {
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-@media screen and (max-width: 480px) {
-  .match_tile {
-    flex: 1 1 100%;
-  }
-
-  .team_badge {
-    width: 40px;
-    height: 40px;
-  }
-
-  .team_name {
-    font-size: 14px;
-  }
-
-  .team_side {
-    display: flex;
+/* ── Desktop ────────────────────────────────────────────────── */
+@media screen and (min-width: 820px) {
+  .hub_header {
+    flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
-    column-gap: 5px;
+    justify-content: space-between;
+    gap: var(--space-5);
   }
 
-  .score_center {
-    font-size: 14px;
+  .hub_title {
+    font-size: var(--fs-h1-d);
+  }
+
+  .hub_filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .hub_select--season {
+    width: 160px;
+  }
+
+  .hub_select--team {
+    width: 200px;
+  }
+
+  .hub_select select {
+    min-height: 48px;
+    padding-top: 20px;
+    border-radius: 12px;
+  }
+
+  .hub_status {
+    grid-column: auto;
+    display: flex;
+    width: auto;
+  }
+
+  .hub_status_option span {
+    padding: 0 16px;
+  }
+
+  .hub_apply {
+    min-width: 96px;
+  }
+
+  .hub_rounds {
+    margin-top: var(--space-6);
+  }
+
+  /* The round becomes one card with its header inside */
+  .hub_round {
+    background: var(--dark);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+
+  .hub_round_head {
+    margin: 0;
+    padding: 18px 24px;
+  }
+
+  .hub_round_card {
+    background: none;
+    border: none;
+    border-radius: 0;
+  }
+
+  .hub_day {
+    padding-left: 24px;
+  }
+
+  .hub_round_card .match_row {
+    grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr);
+    padding: 14px 20px;
+  }
+
+  .hub_round_card .match_side {
+    font-size: 15px;
+  }
+
+  .hub_round_card .match_row .team_badge {
+    width: 32px;
+    height: 32px;
+  }
+
+  .hub_round_card .match_score {
+    font-size: 22px;
+  }
+}
+
+/* Two columns of rows per day from 1100px (narrower, names would collide) */
+@media screen and (min-width: 1100px) {
+  .hub_day_rows {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hub_day_rows .match_row:nth-child(odd) {
+    border-right: 1px solid var(--border);
   }
 }

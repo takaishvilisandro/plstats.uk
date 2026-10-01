@@ -154,7 +154,8 @@ if ($displaySeason !== '') {
 ------------------------------------------------- */
 $recentStmt = $pdo->prepare("
   SELECT m.Id, m.Date, m.Round, h.Slug AS HomeSlug, a.Slug AS AwaySlug, h.Name AS HomeName, a.Name AS AwayName,
-         m.HomeTeamScore, m.AwayTeamScore, l.IsStarter, l.MinutesPlayed, l.Rating,
+         m.HomeTeamId, m.AwayTeamId, m.HomeTeamScore, m.AwayTeamScore,
+         l.TeamId, l.IsStarter, l.MinutesPlayed, l.Rating,
          (SELECT COUNT(*) FROM MatchEvents e WHERE e.MatchId = m.Id AND e.PlayerId = l.PlayerId
             AND e.Type IN ('Goal', 'PenaltyGoal')) AS Goals,
          (SELECT COUNT(*) FROM MatchEvents e WHERE e.MatchId = m.Id AND e.RelatedPlayerId = l.PlayerId
@@ -177,10 +178,11 @@ $recentMatches = $recentStmt->fetchAll();
 /* -------------------------------------------------
    League rankings (top 10 on a board, displayed season)
 ------------------------------------------------- */
-$rankings = [];
+$rankings  = [];
+$rankByKey = [];
 if ($displaySeason !== '') {
   $rankStmt = $pdo->prepare("
-    SELECT d.Label, d.Unit, l.Rank, l.Value
+    SELECT l.MetricKey, d.Label, d.Unit, l.Rank, l.Value
     FROM Leaderboards l
     JOIN MetricDefinitions d ON d.`Key` = l.MetricKey
     WHERE l.EntityType = 'Player'
@@ -189,10 +191,181 @@ if ($displaySeason !== '') {
       AND l.Rank <= 10
       AND l.DeleteDate IS NULL
     ORDER BY l.Rank, d.SortOrder
-    LIMIT 12
   ");
   $rankStmt->execute(['player_id' => $playerId, 'season' => $displaySeason]);
   $rankings = $rankStmt->fetchAll();
+
+  // Rank per metric, for the "2nd in the league" tags on stat rows
+  foreach ($rankings as $r) {
+    $rankByKey[$r['MetricKey']] = (int)$r['Rank'];
+  }
+}
+
+// The module shows the three best rankings
+$topRankings = array_slice($rankings, 0, 3);
+
+/* -------------------------------------------------
+   Position-aware KPI cards and stat category order.
+   Tune here: each card is a season total ('total'),
+   a summed metric ('metric') or the average rating.
+------------------------------------------------- */
+$isGoalkeeper = ($player['Position'] === 'Goalkeeper');
+
+$kpiConfig = [
+  'Goalkeeper' => [
+    ['label' => 'Appearances',      'total'  => 'Appearances'],
+    ['label' => 'Minutes',          'total'  => 'Minutes'],
+    ['label' => 'Saves',            'metric' => 'goalkeeper_saves'],
+    ['label' => 'Goals conceded',   'metric' => 'goals_conceded'],
+    ['label' => 'Goals prevented',  'metric' => 'goals_prevented', 'signed' => true],
+    ['label' => 'Avg rating',       'rating' => true],
+  ],
+  'Defender' => [
+    ['label' => 'Appearances', 'total' => 'Appearances'],
+    ['label' => 'Minutes',     'total' => 'Minutes'],
+    ['label' => 'Goals',       'total' => 'Goals'],
+    ['label' => 'Assists',     'total' => 'Assists'],
+    ['label' => 'Tackles won', 'metric' => 'tackles_won'],
+    ['label' => 'Avg rating',  'rating' => true],
+  ],
+  'Midfielder' => [
+    ['label' => 'Appearances', 'total' => 'Appearances'],
+    ['label' => 'Minutes',     'total' => 'Minutes'],
+    ['label' => 'Goals',       'total' => 'Goals'],
+    ['label' => 'Assists',     'total' => 'Assists'],
+    ['label' => 'Key passes',  'metric' => 'key_passes'],
+    ['label' => 'Avg rating',  'rating' => true],
+  ],
+  'Forward' => [
+    ['label' => 'Appearances', 'total' => 'Appearances'],
+    ['label' => 'Minutes',     'total' => 'Minutes'],
+    ['label' => 'Goals',       'total' => 'Goals'],
+    ['label' => 'Assists',     'total' => 'Assists'],
+    ['label' => 'xG',          'metric' => 'expected_goals_xg'],
+    ['label' => 'Avg rating',  'rating' => true],
+  ],
+  // Position unknown: no position stat
+  'Other' => [
+    ['label' => 'Appearances', 'total' => 'Appearances'],
+    ['label' => 'Minutes',     'total' => 'Minutes'],
+    ['label' => 'Goals',       'total' => 'Goals'],
+    ['label' => 'Assists',     'total' => 'Assists'],
+    ['label' => 'Avg rating',  'rating' => true],
+  ],
+];
+
+$categoryOrder = $isGoalkeeper
+  ? ['Goalkeeping', 'Passing', 'Defending', 'General', 'Attacking', 'Discipline']
+  : ['Attacking', 'Passing', 'Defending', 'General', 'Discipline'];
+
+// Metrics by key (summed across clubs) for the KPI cards
+$metricsByKey = [];
+foreach ($metricGroups as $groupMetrics) {
+  foreach ($groupMetrics as $m) {
+    $metricsByKey[$m['MetricKey']] = $m;
+  }
+}
+
+// KPI cards: a card whose value doesn't exist is skipped
+$kpiCards = [];
+if ($totals) {
+  foreach ($kpiConfig[$player['Position']] ?? $kpiConfig['Other'] as $card) {
+    if (isset($card['total'])) {
+      $value = $card['total'] === 'Minutes' ? number_format($totals['Minutes']) : (string)$totals[$card['total']];
+    } elseif (isset($card['metric'])) {
+      if (!isset($metricsByKey[$card['metric']])) {
+        continue;
+      }
+      $m     = $metricsByKey[$card['metric']];
+      $value = plstats_format_metric($m['Value'], $m['Unit']);
+      if (!empty($card['signed']) && $m['Value'] > 0) {
+        $value = '+' . $value;
+      }
+    } else {
+      if ($totals['AverageRating'] === null) {
+        continue;
+      }
+      $value = number_format($totals['AverageRating'], 2);
+    }
+
+    $kpiCards[] = ['label' => $card['label'], 'value' => $value, 'highlight' => !empty($card['rating'])];
+  }
+}
+
+// Season stats panels in position order (only categories with rows)
+$statPanels = [];
+foreach ($categoryOrder as $category) {
+  if (!empty($metricGroups[$category])) {
+    $statPanels[$category] = $metricGroups[$category];
+  }
+}
+foreach ($metricGroups as $category => $groupMetrics) {
+  if (!isset($statPanels[$category])) {
+    $statPanels[$category] = $groupMetrics;
+  }
+}
+
+// Data-provider note: name only the model figures this page shows
+$modelLabels = [
+  'expected_goals_xg'   => 'xG',
+  'expected_assists_xa' => 'xA',
+  'xg_on_target_xgot'   => 'xGOT',
+  'xgot_faced'          => 'xGOT faced',
+  'goals_prevented'     => 'goals prevented',
+];
+$modelShown = array_values(array_intersect_key($modelLabels, $metricsByKey));
+$ratingShown = ($totals && $totals['AverageRating'] !== null)
+  || in_array(true, array_map(fn($m) => $m['Rating'] !== null, $recentMatches), true);
+if ($ratingShown) {
+  $modelShown[] = 'ratings';
+}
+
+/* -------------------------------------------------
+   Recent matches from the player's side: result,
+   venue, score with their club first, tags
+------------------------------------------------- */
+$recentBySeason = [];
+$recentEnriched = [];
+foreach ($recentMatches as $m) {
+  $isHome   = ((int)$m['TeamId'] === (int)$m['HomeTeamId']);
+  $forGoals = (int)($isHome ? $m['HomeTeamScore'] : $m['AwayTeamScore']);
+  $against  = (int)($isHome ? $m['AwayTeamScore'] : $m['HomeTeamScore']);
+
+  $m['IsHome']     = $isHome;
+  $m['Opponent']   = $isHome ? $m['AwayName'] : $m['HomeName'];
+  $m['ScoreFor']   = $forGoals;
+  $m['ScoreAgainst'] = $against;
+  $m['Result']     = $forGoals > $against ? 'W' : ($forGoals < $against ? 'L' : 'D');
+  $m['CleanSheet'] = $against === 0 && in_array($player['Position'], ['Goalkeeper', 'Defender'], true);
+  $m['Url']        = plstats_match_url($m['Date'], $m['Round'], $m['HomeSlug'], $m['AwaySlug']);
+
+  $recentEnriched[] = $m;
+
+  $season = plstats_season_from_date($m['Date']);
+  $recentBySeason[substr($season, 0, 5) . substr($season, 7, 2)][] = $m;
+}
+
+$resultClasses = ['W' => 'result_win', 'D' => 'result_draw', 'L' => 'result_loss'];
+$resultLabels  = ['W' => 'Win', 'D' => 'Draw', 'L' => 'Loss'];
+
+/**
+ * Rating pill tier: the number is always shown, colour only adds emphasis.
+ */
+function player_rating_class(float $rating): string
+{
+  if ($rating >= 7.5) {
+    return 'rating_pill rating_high';
+  }
+
+  return $rating >= 6.5 ? 'rating_pill' : 'rating_pill rating_low';
+}
+
+/**
+ * "2026-2027" → "2026-27".
+ */
+function player_short_season(string $season): string
+{
+  return substr($season, 0, 5) . substr($season, 7, 2);
 }
 
 /* -------------------------------------------------
@@ -262,13 +435,14 @@ if ($player['TeamName']) {
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <?php include '../includes/blocks/head.php' ?>
 
   <title><?= htmlspecialchars($pageTitle) ?></title>
   <meta name="description" content="<?= htmlspecialchars($pageDesc) ?>" />
   <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/stats.css')) ?>" />
+  <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/player.css')) ?>" />
 
   <!-- Canonical -->
   <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl) ?>" />
@@ -315,232 +489,381 @@ if ($player['TeamName']) {
   <div class="container content_container">
     <?php include '../includes/blocks/navbar_side.php' ?>
 
-    <div class="content">
+    <div class="content player_page">
 
       <?php include '../includes/components/breadcrumbs.php' ?>
 
       <!-- PLAYER HEADER -->
       <section class="entity_header">
-        <h1><?= htmlspecialchars($pageHeading) ?></h1>
+        <div class="entity_identity">
+          <div class="entity_avatar" aria-hidden="true">
+            <span class="entity_initials"><?= htmlspecialchars(plstats_initials($playerName)) ?></span>
+            <?php if ($player['ShirtNumber'] !== null && $player['TeamName']): ?>
+              <span class="entity_shirt num"><?= (int)$player['ShirtNumber'] ?></span>
+            <?php endif; ?>
+          </div>
 
-        <ul class="entity_facts">
-          <?php if ($player['TeamName']): ?>
-            <li>
-              <a href="<?= htmlspecialchars($teamUrl) ?>">
-                <?php if ($teamLogo): ?>
-                  <img src="<?= htmlspecialchars($teamLogo) ?>" alt="<?= htmlspecialchars($player['TeamName']) ?> logo" width="20" height="20">
+          <div class="entity_main">
+            <?php if ($displaySeason !== ''): ?>
+              <h1 class="entity_title"><span class="entity_name"><?= htmlspecialchars($playerName) ?></span> <span class="entity_season">Stats <?= htmlspecialchars($displaySeason) ?></span></h1>
+            <?php else: ?>
+              <h1 class="entity_title"><span class="entity_name"><?= htmlspecialchars($playerName) ?></span></h1>
+            <?php endif; ?>
+
+            <?php if ($player['TeamName'] || $position || $player['Nationality'] || $age !== null): ?>
+              <ul class="entity_facts">
+                <?php if ($player['TeamName']): ?>
+                  <li>
+                    <a class="fact_chip fact_chip--link" href="<?= htmlspecialchars($teamUrl) ?>">
+                      <?= team_badge(['Name' => $player['TeamName'], 'Slug' => $player['TeamSlug'], 'Logo' => $player['TeamLogo']], 24, false) ?>
+                      <?= htmlspecialchars($player['TeamName']) ?>
+                    </a>
+                  </li>
                 <?php endif; ?>
-                <?= htmlspecialchars($player['TeamName']) ?>
-              </a>
-            </li>
-          <?php endif; ?>
-          <?php if ($position): ?>
-            <li>Position: <strong><?= htmlspecialchars($position) ?></strong></li>
-          <?php endif; ?>
-          <?php if ($player['ShirtNumber'] !== null && $player['TeamName']): ?>
-            <li>Shirt number: <strong><?= (int)$player['ShirtNumber'] ?></strong></li>
-          <?php endif; ?>
-          <?php if ($player['Nationality']): ?>
-            <li>Nationality: <strong><?= htmlspecialchars($player['Nationality']) ?></strong></li>
-          <?php endif; ?>
-          <?php if ($age !== null): ?>
-            <li>Age: <strong><?= $age ?></strong> (born <?= plstats_format_date($player['DateOfBirth']) ?>)</li>
-          <?php endif; ?>
-        </ul>
+                <?php if ($position): ?>
+                  <li><span class="fact_chip"><?= htmlspecialchars($position) ?></span></li>
+                <?php endif; ?>
+                <?php if ($player['Nationality']): ?>
+                  <li><span class="fact_chip"><?= htmlspecialchars($player['Nationality']) ?></span></li>
+                <?php endif; ?>
+                <?php if ($age !== null): ?>
+                  <li><span class="fact_chip num">Age <?= $age ?> · born <?= plstats_format_date($player['DateOfBirth']) ?></span></li>
+                <?php endif; ?>
+              </ul>
+            <?php endif; ?>
+          </div>
+        </div>
 
         <?php if ($updatedAt): ?>
-          <p class="page_meta">Updated <time datetime="<?= htmlspecialchars($updatedAt) ?>"><?= plstats_format_date($updatedAt) ?></time></p>
+          <p class="entity_updated updated_label num">
+            <span><?php if ($displaySeason !== ''): ?><span class="entity_updated_season">Premier League <?= htmlspecialchars($displaySeason) ?> · </span><?php endif; ?>Updated <?= plstats_format_date($updatedAt) ?></span>
+          </p>
         <?php endif; ?>
       </section>
 
       <!-- KPI CARDS (displayed season, all clubs) -->
-      <?php if ($totals): ?>
-        <section class="section_content">
-          <h2 class="section_heading">Premier League <?= htmlspecialchars($displaySeason) ?></h2>
+      <?php if ($kpiCards): ?>
+        <section class="player_kpis" aria-label="Premier League <?= htmlspecialchars($displaySeason) ?> key stats">
           <div class="kpi_grid">
-            <div class="kpi_card">
-              <p class="kpi_label">Appearances</p>
-              <p class="kpi_value"><?= $totals['Appearances'] ?></p>
-            </div>
-            <div class="kpi_card">
-              <p class="kpi_label">Starts</p>
-              <p class="kpi_value"><?= $totals['Starts'] ?></p>
-            </div>
-            <div class="kpi_card">
-              <p class="kpi_label">Minutes</p>
-              <p class="kpi_value"><?= number_format($totals['Minutes']) ?></p>
-            </div>
-            <div class="kpi_card">
-              <p class="kpi_label">Goals</p>
-              <p class="kpi_value"><?= $totals['Goals'] ?></p>
-            </div>
-            <div class="kpi_card">
-              <p class="kpi_label">Assists</p>
-              <p class="kpi_value"><?= $totals['Assists'] ?></p>
-            </div>
-            <?php if ($totals['AverageRating'] !== null): ?>
-              <div class="kpi_card">
-                <p class="kpi_label">Average rating</p>
-                <p class="kpi_value"><?= number_format($totals['AverageRating'], 2) ?></p>
+            <?php foreach ($kpiCards as $card): ?>
+              <div class="kpi_card<?= $card['highlight'] ? ' kpi_card--highlight' : '' ?>">
+                <p class="kpi_label"><?= htmlspecialchars($card['label']) ?></p>
+                <p class="kpi_value num"><?= htmlspecialchars($card['value']) ?></p>
               </div>
-            <?php endif; ?>
-          </div>
-        </section>
-      <?php endif; ?>
-
-      <!-- LEAGUE RANKINGS -->
-      <?php if ($rankings): ?>
-        <section class="section_content">
-          <h2 class="section_heading">League Rankings <?= htmlspecialchars($displaySeason) ?></h2>
-          <ul class="link_chips">
-            <?php foreach ($rankings as $r): ?>
-              <li><span><?= plstats_ordinal((int)$r['Rank']) ?> • <?= htmlspecialchars($r['Label']) ?> (<?= plstats_format_metric($r['Value'], $r['Unit']) ?>)</span></li>
             <?php endforeach; ?>
-          </ul>
-        </section>
-      <?php endif; ?>
-
-      <!-- RECENT MATCHES -->
-      <?php if ($recentMatches): ?>
-        <section class="section_content">
-          <h2 class="section_heading">Recent Matches</h2>
-          <div class="stat_table_wrap">
-            <table class="stat_table">
-              <thead>
-                <tr>
-                  <th scope="col" class="st_name">Match</th>
-                  <th scope="col" class="st_left">Date</th>
-                  <th scope="col"><abbr title="Minutes played">Mins</abbr></th>
-                  <th scope="col"><abbr title="Goals">G</abbr></th>
-                  <th scope="col"><abbr title="Assists">A</abbr></th>
-                  <th scope="col">Rating</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($recentMatches as $m): ?>
-                  <tr>
-                    <th scope="row" class="st_name">
-                      <a href="<?= htmlspecialchars(plstats_match_url($m['Date'], $m['Round'], $m['HomeSlug'], $m['AwaySlug'])) ?>">
-                        <?= htmlspecialchars($m['HomeName']) ?> <?= (int)$m['HomeTeamScore'] ?>–<?= (int)$m['AwayTeamScore'] ?> <?= htmlspecialchars($m['AwayName']) ?>
-                      </a>
-                    </th>
-                    <td class="st_left st_muted"><?= plstats_format_date($m['Date']) ?></td>
-                    <td><?= (int)$m['MinutesPlayed'] ?></td>
-                    <td class="st_strong"><?= (int)$m['Goals'] ?></td>
-                    <td><?= (int)$m['Assists'] ?></td>
-                    <td><?= $m['Rating'] !== null ? number_format((float)$m['Rating'], 1) : '<span class="st_muted">–</span>' ?></td>
-                  </tr>
-                <?php endforeach; ?>
-              </tbody>
-            </table>
           </div>
         </section>
       <?php endif; ?>
 
-      <!-- DETAILED STATS (displayed season) -->
-      <?php foreach ($metricGroups as $category => $groupMetrics): ?>
-        <section class="section_content">
-          <h2 class="section_heading"><?= htmlspecialchars($category) ?> Stats <?= htmlspecialchars($displaySeason) ?></h2>
-          <div class="stat_table_wrap">
-            <table class="stat_table">
-              <thead>
-                <tr>
-                  <th scope="col" class="st_name">Stat</th>
-                  <th scope="col">Total</th>
-                  <?php if ($showPer90): ?>
-                    <th scope="col"><abbr title="Per 90 minutes played">Per 90</abbr></th>
-                  <?php endif; ?>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($groupMetrics as $m): ?>
-                  <tr>
-                    <th scope="row" class="st_name"><abbr title="<?= htmlspecialchars($m['Description']) ?>"><?= htmlspecialchars($m['Label']) ?></abbr></th>
-                    <td class="st_strong">
-                      <?= plstats_format_metric($m['Value'], $m['Unit']) ?><?php if ($m['Percentage'] !== null): ?>/<?= number_format($m['Total']) ?>
-                        <span class="st_muted">(<?= number_format($m['Percentage'], 1) ?>%)</span><?php endif; ?>
-                    </td>
-                    <?php if ($showPer90): ?>
-                      <td><?= $m['Per90'] !== null ? number_format($m['Per90'], 2) : '<span class="st_muted">–</span>' ?></td>
+      <div class="player_layout">
+
+        <!-- RECENT MATCHES -->
+        <?php if ($recentMatches): ?>
+          <section class="player_section player_recent" aria-labelledby="player_recent_title">
+            <div class="section_head">
+              <h2 class="section_title" id="player_recent_title">Recent matches</h2>
+            </div>
+
+            <!-- Mobile: list grouped by season -->
+            <div class="card match_list">
+              <?php foreach ($recentBySeason as $seasonLabel => $seasonMatches): ?>
+                <div class="card_subhead num"><?= htmlspecialchars($seasonLabel) ?></div>
+                <?php foreach ($seasonMatches as $m): ?>
+                  <a class="match_list_row" href="<?= htmlspecialchars($m['Url']) ?>">
+                    <span class="result_badge <?= $resultClasses[$m['Result']] ?>" title="<?= $resultLabels[$m['Result']] ?>"><?= $m['Result'] ?></span>
+                    <span class="match_list_info">
+                      <span class="match_list_opponent"><?= $m['IsHome'] ? 'vs' : 'at' ?> <?= htmlspecialchars($m['Opponent']) ?></span>
+                      <span class="match_list_meta num">
+                        <?= plstats_format_date($m['Date']) ?>
+                        <?php if ($m['CleanSheet']): ?><span class="match_tag">Clean sheet</span><?php endif; ?>
+                        <?php if ((int)$m['Goals'] > 0): ?><span class="match_tag"><?= (int)$m['Goals'] ?> G</span><?php endif; ?>
+                        <?php if ((int)$m['Assists'] > 0): ?><span class="match_tag"><?= (int)$m['Assists'] ?> A</span><?php endif; ?>
+                        <?php if ((int)$m['MinutesPlayed'] < 90): ?><span class="match_tag"><?= (int)$m['MinutesPlayed'] ?>'</span><?php endif; ?>
+                      </span>
+                    </span>
+                    <span class="match_list_score num"><?= $m['ScoreFor'] ?>–<?= $m['ScoreAgainst'] ?></span>
+                    <?php if ($m['Rating'] !== null): ?>
+                      <span class="<?= player_rating_class((float)$m['Rating']) ?> num"><?= number_format((float)$m['Rating'], 1) ?></span>
+                    <?php else: ?>
+                      <span></span>
                     <?php endif; ?>
-                  </tr>
+                  </a>
                 <?php endforeach; ?>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      <?php endforeach; ?>
+              <?php endforeach; ?>
+            </div>
+            <?php if ($player['TeamName']): ?>
+              <p class="table_note match_list_note">Scores shown with <?= htmlspecialchars($player['TeamName']) ?>'s goals first.</p>
+            <?php else: ?>
+              <p class="table_note match_list_note">Scores shown with the player's club first.</p>
+            <?php endif; ?>
 
-      <?php if ($metricGroups): ?>
-        <p class="table_note">
-          <?php if ($showPer90): ?>
-            Per-90 figures are the season total divided by minutes played, times 90.
-          <?php else: ?>
-            Per-90 figures are shown once a player has <?= PLAYER_PER90_MIN_MINUTES ?> minutes in the season.
-          <?php endif; ?>
-          xG, xA, xGOT, goals prevented and ratings are the data provider's figures.
-        </p>
-      <?php endif; ?>
-
-      <!-- SEASON BY SEASON -->
-      <?php if ($seasonRows): ?>
-        <section class="section_content">
-          <h2 class="section_heading">Premier League Seasons</h2>
-          <div class="stat_table_wrap">
-            <table class="stat_table">
-              <thead>
-                <tr>
-                  <th scope="col" class="st_name">Season</th>
-                  <th scope="col" class="st_left">Club</th>
-                  <th scope="col"><abbr title="Appearances">Apps</abbr></th>
-                  <th scope="col">Starts</th>
-                  <th scope="col"><abbr title="Minutes played">Mins</abbr></th>
-                  <th scope="col"><abbr title="Goals">G</abbr></th>
-                  <th scope="col"><abbr title="Assists">A</abbr></th>
-                  <th scope="col"><abbr title="Yellow cards">YC</abbr></th>
-                  <th scope="col"><abbr title="Red cards">RC</abbr></th>
-                  <th scope="col">Rating</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($seasonRows as $r): ?>
+            <!-- Desktop: table -->
+            <div class="card match_table_card">
+              <table class="match_table">
+                <thead>
                   <tr>
-                    <th scope="row" class="st_name"><?= htmlspecialchars($r['Season']) ?></th>
-                    <td class="st_left"><a href="<?= htmlspecialchars(plstats_team_url($r['TeamSlug'])) ?>"><?= htmlspecialchars($r['TeamName']) ?></a></td>
-                    <td><?= (int)$r['Appearances'] ?></td>
-                    <td><?= (int)$r['Starts'] ?></td>
-                    <td><?= number_format((int)$r['Minutes']) ?></td>
-                    <td class="st_strong"><?= (int)$r['Goals'] ?></td>
-                    <td><?= (int)$r['Assists'] ?></td>
-                    <td><?= (int)$r['YellowCards'] ?></td>
-                    <td><?= (int)$r['RedCards'] ?></td>
-                    <td><?= $r['AverageRating'] !== null ? number_format((float)$r['AverageRating'], 2) : '<span class="st_muted">–</span>' ?></td>
+                    <th scope="col" class="mt_match">Match</th>
+                    <th scope="col">Date</th>
+                    <th scope="col" class="mt_c">Result</th>
+                    <?php if (!$isGoalkeeper): ?>
+                      <th scope="col" class="mt_c"><abbr title="Goals">G</abbr></th>
+                      <th scope="col" class="mt_c"><abbr title="Assists">A</abbr></th>
+                    <?php endif; ?>
+                    <th scope="col" class="mt_c"><abbr title="Minutes played">Mins</abbr></th>
+                    <th scope="col" class="mt_r">Rating</th>
                   </tr>
-                <?php endforeach; ?>
-              </tbody>
-            </table>
-          </div>
-          <p class="table_note">Player data covers the Premier League from the 2025-2026 season onwards.</p>
-        </section>
-      <?php endif; ?>
+                </thead>
+                <tbody>
+                  <?php foreach ($recentEnriched as $m): ?>
+                    <tr>
+                      <th scope="row" class="mt_match">
+                        <a href="<?= htmlspecialchars($m['Url']) ?>"><?= htmlspecialchars($m['HomeName']) ?> <span class="num"><?= (int)$m['HomeTeamScore'] ?>–<?= (int)$m['AwayTeamScore'] ?></span> <?= htmlspecialchars($m['AwayName']) ?></a>
+                        <?php if ($m['CleanSheet']): ?><span class="match_tag">Clean sheet</span><?php endif; ?>
+                      </th>
+                      <td class="num mt_muted"><?= plstats_format_date($m['Date']) ?></td>
+                      <td class="mt_c"><span class="result_badge result_badge--sm <?= $resultClasses[$m['Result']] ?>" title="<?= $resultLabels[$m['Result']] ?>"><?= $m['Result'] ?></span></td>
+                      <?php if (!$isGoalkeeper): ?>
+                        <td class="mt_c num"><?= (int)$m['Goals'] ?></td>
+                        <td class="mt_c num"><?= (int)$m['Assists'] ?></td>
+                      <?php endif; ?>
+                      <td class="mt_c num"><?= (int)$m['MinutesPlayed'] ?></td>
+                      <td class="mt_r">
+                        <?php if ($m['Rating'] !== null): ?>
+                          <span class="<?= player_rating_class((float)$m['Rating']) ?> num"><?= number_format((float)$m['Rating'], 1) ?></span>
+                        <?php endif; ?>
+                      </td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        <?php endif; ?>
 
-      <!-- RELATED -->
-      <section class="section_content">
-        <h2 class="section_heading">More Premier League Stats</h2>
-        <ul class="link_chips">
-          <?php if ($player['TeamName']): ?>
-            <li><a href="<?= htmlspecialchars($teamUrl) ?>"><?= htmlspecialchars($player['TeamName']) ?></a></li>
+        <aside class="player_side">
+
+          <!-- LEAGUE RANKINGS -->
+          <?php if ($topRankings): ?>
+            <section class="player_section player_rankings" aria-labelledby="player_rankings_title">
+              <div class="section_head">
+                <h2 class="section_title" id="player_rankings_title">League rankings <span class="section_title_season"><?= htmlspecialchars($displaySeason) ?></span></h2>
+              </div>
+              <ol class="rank_list">
+                <?php foreach ($topRankings as $r): ?>
+                  <li class="rank_item">
+                    <span class="rank_pos num"><?= plstats_ordinal((int)$r['Rank']) ?></span>
+                    <span class="rank_label"><?= htmlspecialchars($r['Label']) ?></span>
+                    <span class="rank_value num"><?= plstats_format_metric($r['Value'], $r['Unit']) ?></span>
+                  </li>
+                <?php endforeach; ?>
+              </ol>
+            </section>
           <?php endif; ?>
-          <li><a href="<?= htmlspecialchars(plstats_url('/players/')) ?>">All players</a></li>
-          <li><a href="<?= htmlspecialchars(plstats_table_url()) ?>">League table</a></li>
-          <li><a href="<?= htmlspecialchars(plstats_url('/matches/')) ?>">Fixtures &amp; results</a></li>
-        </ul>
-      </section>
+
+          <!-- MORE STATS -->
+          <section class="player_section player_more" aria-labelledby="player_more_title">
+            <div class="section_head">
+              <h2 class="section_title" id="player_more_title">More Premier League stats</h2>
+            </div>
+            <div class="link_tiles">
+              <?php if ($player['TeamName']): ?>
+                <a class="link_tile" href="<?= htmlspecialchars($teamUrl) ?>">
+                  <?= team_badge(['Name' => $player['TeamName'], 'Slug' => $player['TeamSlug'], 'Logo' => $player['TeamLogo']], 24) ?>
+                  <span><?= htmlspecialchars($player['TeamName']) ?></span>
+                </a>
+              <?php endif; ?>
+              <a class="link_tile" href="<?= htmlspecialchars(plstats_url('/players/')) ?>">
+                <i class="far fa-user" aria-hidden="true"></i><span>All players</span>
+              </a>
+              <a class="link_tile" href="<?= htmlspecialchars(plstats_table_url()) ?>">
+                <i class="fas fa-list-ul" aria-hidden="true"></i><span>League table</span>
+              </a>
+              <a class="link_tile" href="<?= htmlspecialchars(plstats_url('/matches/')) ?>">
+                <i class="far fa-calendar-alt" aria-hidden="true"></i><span>Fixtures &amp; results</span>
+              </a>
+            </div>
+          </section>
+
+        </aside>
+
+        <!-- SEASON STATS -->
+        <?php if ($statPanels): ?>
+          <section class="player_section player_stats" aria-labelledby="player_stats_title">
+            <div class="section_head">
+              <h2 class="section_title" id="player_stats_title">Season stats <?= htmlspecialchars($displaySeason) ?></h2>
+            </div>
+
+            <div class="stat_tabs_wrap" id="playerStatTabs">
+              <div class="view_tabs stat_tabs" role="tablist" aria-label="Stat category" hidden>
+                <?php $i = 0;
+                foreach ($statPanels as $category => $groupMetrics): $slug = strtolower($category); ?>
+                  <button type="button" class="view_tab" role="tab" id="stat_tab_<?= $slug ?>" aria-controls="stat_panel_<?= $slug ?>" aria-selected="<?= $i === 0 ? 'true' : 'false' ?>" tabindex="<?= $i === 0 ? '0' : '-1' ?>"><?= htmlspecialchars($category) ?></button>
+                <?php $i++;
+                endforeach; ?>
+              </div>
+
+              <div class="stat_panels">
+                <?php $i = 0;
+                foreach ($statPanels as $category => $groupMetrics): $slug = strtolower($category); ?>
+                  <div class="card stat_panel<?= $i === 0 ? ' is_active' : '' ?>" id="stat_panel_<?= $slug ?>" role="tabpanel" aria-labelledby="stat_tab_<?= $slug ?>">
+                    <h3 class="stat_panel_title"><?= htmlspecialchars($category) ?></h3>
+                    <?php foreach ($groupMetrics as $m):
+                      $rank = $rankByKey[$m['MetricKey']] ?? null;
+                    ?>
+                      <div class="stat_row">
+                        <div class="stat_row_main">
+                          <div class="stat_row_label">
+                            <abbr title="<?= htmlspecialchars($m['Description']) ?>"><?= htmlspecialchars($m['Label']) ?></abbr>
+                            <?php if ($rank !== null): ?>
+                              <span class="rank_tag"><?= plstats_ordinal($rank) ?> in the league</span>
+                            <?php endif; ?>
+                          </div>
+                          <div class="stat_row_values">
+                            <span class="stat_row_total num">
+                              <?= plstats_format_metric($m['Value'], $m['Unit']) ?><?php if ($m['Percentage'] !== null): ?>/<?= number_format($m['Total']) ?><?php endif; ?>
+                            </span>
+                            <?php if ($m['Per90'] !== null): ?>
+                              <span class="stat_row_per90 num"><?= number_format($m['Per90'], 2) ?> per 90</span>
+                            <?php endif; ?>
+                          </div>
+                        </div>
+                        <?php if ($m['Percentage'] !== null):
+                          $pct = max(0, min(100, $m['Percentage']));
+                        ?>
+                          <div class="stat_bar">
+                            <span class="stat_bar_track"><span class="stat_bar_fill" style="width:<?= number_format($pct, 1, '.', '') ?>%"></span></span>
+                            <span class="stat_bar_pct num"><?= number_format($m['Percentage'], 1) ?>%</span>
+                          </div>
+                        <?php endif; ?>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                <?php $i++;
+                endforeach; ?>
+              </div>
+            </div>
+
+            <p class="table_note">
+              <?php if ($showPer90): ?>
+                Per 90 = season total ÷ minutes played × 90.
+              <?php else: ?>
+                Per-90 figures are shown once a player has <?= PLAYER_PER90_MIN_MINUTES ?> minutes in the season.
+              <?php endif; ?>
+              <?php if ($modelShown): ?>
+                <?php
+                $modelText = count($modelShown) > 1
+                  ? implode(', ', array_slice($modelShown, 0, -1)) . ' and ' . end($modelShown)
+                  : $modelShown[0];
+                ?>
+                <?= htmlspecialchars($modelText[0] === 'x' ? $modelText : ucfirst($modelText)) ?> are the data provider's figures.
+              <?php endif; ?>
+            </p>
+          </section>
+        <?php endif; ?>
+
+        <!-- SEASON BY SEASON -->
+        <?php if ($seasonRows): ?>
+          <section class="player_section player_seasons" aria-labelledby="player_seasons_title">
+            <div class="section_head">
+              <h2 class="section_title" id="player_seasons_title">Premier League seasons</h2>
+            </div>
+            <div class="stat_table_wrap card">
+              <table class="stat_table seasons_table">
+                <thead>
+                  <tr>
+                    <th scope="col" class="st_name">Season</th>
+                    <th scope="col" class="st_left">Club</th>
+                    <th scope="col"><abbr title="Appearances">Apps</abbr></th>
+                    <th scope="col" class="col_desktop">Starts</th>
+                    <th scope="col"><abbr title="Minutes played">Mins</abbr></th>
+                    <th scope="col"><abbr title="Goals">G</abbr></th>
+                    <th scope="col"><abbr title="Assists">A</abbr></th>
+                    <th scope="col"><abbr title="Yellow cards">YC</abbr></th>
+                    <th scope="col"><abbr title="Red cards">RC</abbr></th>
+                    <th scope="col">Rating</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php foreach ($seasonRows as $r): ?>
+                    <tr>
+                      <th scope="row" class="st_name num">
+                        <a href="<?= htmlspecialchars($r['Season'] === $currentSeason ? plstats_table_url() : plstats_table_url($r['Season'])) ?>"><?= htmlspecialchars(player_short_season($r['Season'])) ?></a>
+                      </th>
+                      <td class="st_left"><a href="<?= htmlspecialchars(plstats_team_url($r['TeamSlug'])) ?>"><?= htmlspecialchars($r['TeamName']) ?></a></td>
+                      <td class="num"><?= (int)$r['Appearances'] ?></td>
+                      <td class="num col_desktop"><?= (int)$r['Starts'] ?></td>
+                      <td class="num"><?= number_format((int)$r['Minutes']) ?></td>
+                      <td class="num"><?= (int)$r['Goals'] ?></td>
+                      <td class="num"><?= (int)$r['Assists'] ?></td>
+                      <td class="num"><?= (int)$r['YellowCards'] ?></td>
+                      <td class="num"><?= (int)$r['RedCards'] ?></td>
+                      <td class="num st_strong"><?= $r['AverageRating'] !== null ? number_format((float)$r['AverageRating'], 2) : '' ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+            <p class="table_note">Player data covers the Premier League from 2025-26 onwards.</p>
+          </section>
+        <?php endif; ?>
+
+      </div>
 
     </div>
   </div>
 
   <?php include '../includes/blocks/footer.php' ?>
+
+  <script>
+    /* ── Season stats tabs (mobile; desktop shows every panel) ── */
+    (function() {
+      var wrap = document.getElementById('playerStatTabs');
+      if (!wrap) return;
+
+      var list = wrap.querySelector('[role="tablist"]');
+      var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+      var panels = Array.prototype.slice.call(wrap.querySelectorAll('[role="tabpanel"]'));
+
+      /* Progressive enhancement: without JS every panel is shown stacked */
+      wrap.classList.add('js_tabs');
+      list.hidden = false;
+
+      function activate(tab, focus) {
+        tabs.forEach(function(t) {
+          var on = (t === tab);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+          t.tabIndex = on ? 0 : -1;
+          t.classList.toggle('view_tab--active', on);
+        });
+        panels.forEach(function(p) {
+          p.classList.toggle('is_active', p.id === tab.getAttribute('aria-controls'));
+        });
+        if (focus) {
+          tab.focus();
+          tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+      }
+
+      tabs.forEach(function(tab, i) {
+        tab.addEventListener('click', function() {
+          activate(tab, false);
+        });
+        tab.addEventListener('keydown', function(e) {
+          var next = null;
+          if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+          if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+          if (e.key === 'Home') next = tabs[0];
+          if (e.key === 'End') next = tabs[tabs.length - 1];
+          if (next) {
+            e.preventDefault();
+            activate(next, true);
+          }
+        });
+      });
+
+      activate(tabs[0], false);
+    }());
+  </script>
 
 </body>
 

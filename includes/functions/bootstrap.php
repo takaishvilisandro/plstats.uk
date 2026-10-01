@@ -77,6 +77,12 @@ if (!defined('PLSTATS_BASE')) {
   define('PLSTATS_AUTHOR_NAME', 'PLStats Editorial Team');
 }
 
+// Optional contact / corrections address (app.config.php CONTACT_EMAIL); '' = not configured
+if (!defined('PLSTATS_CONTACT_EMAIL')) {
+  $contactEmail = trim((string)($appConfig['CONTACT_EMAIL'] ?? ''));
+  define('PLSTATS_CONTACT_EMAIL', filter_var($contactEmail, FILTER_VALIDATE_EMAIL) ? $contactEmail : '');
+}
+
 if (!function_exists('plstats_url')) {
   /**
    * Build an absolute first-party URL from SITE_URL + path.

@@ -1,0 +1,556 @@
+/* ==================================================
+   League table (/table/ and /table/{season}/)
+================================================== */
+
+/* ── Header ─────────────────────────────────────────────────── */
+.table_header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.table_title {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding-left: 0;
+}
+
+.table_title::before {
+  display: none;
+}
+
+.table_title .entity_name {
+  font-size: var(--fs-h1-m);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.table_title .entity_season {
+  margin-top: 4px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.table_meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: var(--space-3);
+}
+
+.table_meta_link {
+  display: inline-flex;
+  align-items: center;
+  column-gap: 6px;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.table_meta_link:hover {
+  color: var(--brand-hover);
+}
+
+.table_meta_link i {
+  font-size: 10px;
+}
+
+.label_desktop {
+  display: none;
+}
+
+/* ── Overall / Home / Away: segmented control ───────────────── */
+.table_toggle {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.table_toggle[hidden] {
+  display: none;
+}
+
+.table_toggle .view_tab {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
+}
+
+.table_toggle .view_tab--active,
+.table_toggle .view_tab--active:hover {
+  background: var(--brand);
+  color: var(--dark);
+  font-weight: 700;
+}
+
+/* ── Panels ─────────────────────────────────────────────────── */
+.table_panels {
+  margin-top: var(--space-5);
+}
+
+.table_panel {
+  margin-top: 0 !important;
+}
+
+.table_panel + .table_panel {
+  margin-top: var(--space-6) !important;
+}
+
+/* With JS: only the active panel */
+.js_tabs .table_panel {
+  display: none;
+}
+
+.js_tabs .table_panel.is_active {
+  display: block;
+  margin-top: 0 !important;
+}
+
+.table_panel_head {
+  margin-bottom: var(--space-2);
+}
+
+.table_panel_head .section_title {
+  font-size: var(--fs-lg);
+}
+
+/* Mobile column-set switch */
+.col_switch {
+  display: flex;
+  gap: 6px;
+}
+
+.col_switch[hidden] {
+  display: none;
+}
+
+.col_switch_btn {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--dark);
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-family: var(--font-primary);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.col_switch_btn[aria-pressed="true"] {
+  background: var(--brand-soft-strong);
+  border-color: rgba(57, 169, 151, 0.5);
+  color: var(--brand);
+}
+
+/* ── The table ──────────────────────────────────────────────── */
+.table_wrap {
+  margin-top: 0;
+}
+
+.league_table th,
+.league_table td {
+  padding: 13px 8px;
+}
+
+.league_table tbody .st_name,
+.league_table tbody .st_name a {
+  font-weight: 600;
+}
+
+.league_table .team_badge {
+  width: 24px;
+  height: 24px;
+}
+
+.league_table .team_badge img {
+  width: 100%;
+  height: 100%;
+}
+
+.league_table .team_badge--initials {
+  font-size: 8px;
+}
+
+.league_table .col_p,
+.league_table .col_gf,
+.league_table .col_ga {
+  color: var(--text-secondary);
+}
+
+.league_table thead th {
+  color: var(--text-secondary);
+}
+
+.league_table .col_pts {
+  font-weight: 800;
+}
+
+.league_table thead .col_pts {
+  font-weight: 700;
+}
+
+.league_table .col_form {
+  text-align: left;
+}
+
+.league_table .form_badge {
+  width: 20px;
+  height: 20px;
+}
+
+/* Relegation places (18th-20th) */
+.league_table .is_relegation .st_pos {
+  color: var(--loss-text);
+  box-shadow: inset 3px 0 0 var(--loss);
+}
+
+.league_table tbody tr:has(+ .is_relegation_first) > * {
+  border-bottom-color: rgba(231, 76, 60, 0.45);
+}
+
+/* Champions (completed seasons) */
+.league_table .is_champion .st_pos {
+  color: var(--brand);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+
+.champion_tag {
+  display: inline-block;
+  margin-left: 34px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+/* ── Legend ─────────────────────────────────────────────────── */
+.table_legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 20px;
+  margin-top: 10px;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.legend_item {
+  display: inline-flex;
+  align-items: center;
+  column-gap: 8px;
+}
+
+.legend_item::before {
+  content: "";
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.legend_item--relegation::before {
+  background: var(--loss);
+}
+
+.legend_item--champion::before {
+  background: var(--brand);
+}
+
+/* ── Tables by season ───────────────────────────────────────── */
+.table_seasons {
+  margin-top: var(--space-6);
+  background: none;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.table_seasons .section_title {
+  margin-bottom: var(--space-3);
+}
+
+.season_group + .season_group {
+  margin-top: var(--space-4);
+}
+
+.season_group_label {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.season_chips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.season_chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 6px;
+  border-radius: var(--radius-md);
+  background: var(--dark);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.season_chip:hover {
+  border-color: rgba(57, 169, 151, 0.5);
+}
+
+.season_chip[aria-current="page"] {
+  background: var(--brand-soft);
+  border-color: rgba(57, 169, 151, 0.5);
+  color: var(--brand);
+}
+
+/* ── Mobile column sets (JS only; without JS every column shows) ── */
+@media screen and (max-width: 819.98px) {
+  /* Short: Pos · Team · P · GD · Pts, names may wrap */
+  .js_cols.cols_short .league_table :is(.col_w, .col_d, .col_l, .col_gf, .col_ga, .col_form) {
+    display: none;
+  }
+
+  .js_cols.cols_short .league_table .st_name {
+    position: static;
+    white-space: normal;
+    width: 100%;
+  }
+
+  .js_cols.cols_short .league_table .st_pos {
+    position: static;
+  }
+
+  /* Form: Pos · Team · Last 5 (Home/Away have no form, so they fall back to Short) */
+  .js_cols.cols_form .table_panel--overall .league_table :is(.col_p, .col_w, .col_d, .col_l, .col_gf, .col_ga, .col_gd, .col_pts) {
+    display: none;
+  }
+
+  .js_cols.cols_form .table_panel:not(.table_panel--overall) .league_table :is(.col_w, .col_d, .col_l, .col_gf, .col_ga) {
+    display: none;
+  }
+
+  .js_cols.cols_form .league_table .st_name {
+    position: static;
+    white-space: normal;
+    width: 100%;
+  }
+
+  .js_cols.cols_form .league_table .st_pos {
+    position: static;
+  }
+
+  .js_cols.cols_form .league_table .col_form {
+    white-space: nowrap;
+  }
+
+  /* Full: every column; Pos + Team pinned, the table scrolls inside its card */
+  .js_cols.cols_full .league_table .team_badge {
+    display: none;
+  }
+
+  .league_table .st_pos + .st_name {
+    box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.6);
+  }
+
+  .js_cols:is(.cols_short, .cols_form) .league_table .st_pos + .st_name {
+    box-shadow: none;
+  }
+
+  .champion_tag {
+    margin-left: 0;
+  }
+
+  .js_cols.cols_full .champion_tag,
+  .table_panels:not(.js_cols) .champion_tag {
+    display: none;
+  }
+}
+
+/* ── Desktop ────────────────────────────────────────────────── */
+@media screen and (min-width: 820px) {
+  .table_header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-6);
+  }
+
+  .table_title {
+    display: block;
+  }
+
+  .table_title .entity_name {
+    font-size: var(--fs-h1-d);
+  }
+
+  .table_title .entity_season {
+    margin-left: 8px;
+    font-size: 22px;
+  }
+
+  .table_meta {
+    justify-content: flex-start;
+  }
+
+  .label_mobile {
+    display: none;
+  }
+
+  .label_desktop {
+    display: inline;
+  }
+
+  .table_toggle {
+    grid-template-columns: repeat(3, 120px);
+    flex-shrink: 0;
+  }
+
+  .table_panels {
+    margin-top: var(--space-6);
+  }
+
+  .col_switch,
+  .col_switch[hidden] {
+    display: none;
+  }
+
+  .table_panel--overall .table_panel_head {
+    margin: 0;
+  }
+
+  .table_wrap {
+    border-radius: 18px;
+  }
+
+  .league_table th,
+  .league_table td {
+    padding: 12px 10px;
+  }
+
+  .league_table .st_pos {
+    padding-left: 24px;
+    width: 64px;
+    min-width: 64px;
+  }
+
+  .league_table .st_pos + .st_name {
+    left: 64px;
+  }
+
+  .league_table .team_badge {
+    width: 28px;
+    height: 28px;
+  }
+
+  .league_table .team_badge--initials {
+    font-size: 9px;
+  }
+
+  .league_table .st_name {
+    width: 32%;
+  }
+
+  .league_table tbody .col_pts {
+    font-size: 16px;
+  }
+
+  .league_table .form_badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+  }
+
+  .league_table .is_relegation .st_pos {
+    box-shadow: inset 4px 0 0 var(--loss);
+  }
+
+  .league_table .is_champion .st_pos {
+    box-shadow: inset 4px 0 0 var(--brand);
+  }
+
+  .champion_tag {
+    margin: 0 0 0 10px;
+    vertical-align: middle;
+  }
+
+  .league_table .st_name a {
+    display: inline-flex;
+    vertical-align: middle;
+  }
+
+  /* Let the champions tag drop under the name when space is short */
+  .league_table .is_champion .st_name {
+    white-space: normal;
+  }
+
+  .table_legend {
+    font-size: 13px;
+  }
+
+  /* Seasons: one card, a row per decade */
+  .table_seasons {
+    margin-top: var(--space-7);
+    padding: var(--space-6);
+    background: var(--dark);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+  }
+
+  .table_seasons .section_title {
+    margin-bottom: var(--space-5);
+  }
+
+  .season_group {
+    display: grid;
+    grid-template-columns: 80px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .season_group_label {
+    margin: 12px 0 0;
+  }
+
+  .season_chips {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .season_chip {
+    min-height: 40px;
+    border-radius: 10px;
+    background: var(--dark-secondary);
+  }
+}

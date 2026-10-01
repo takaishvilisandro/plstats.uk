@@ -105,7 +105,7 @@ function buildTableView(PDO $pdo, array $rows, string $prefix): array
       'pos'      => (int)$r[$prefix . 'Position'],
       'name'     => $r['TeamName'],
       'slug'     => $r['TeamSlug'],
-      'logo'     => plstats_team_logo($pdo, $r['TeamLogo'], $r['TeamSlug']),
+      'logo'     => $r['TeamLogo'],
       'played'   => (int)$r[$prefix . 'Played'],
       'won'      => (int)$r[$prefix . 'Won'],
       'drawn'    => (int)$r[$prefix . 'Drawn'],
@@ -144,6 +144,47 @@ if (!$isArchive) {
   $resultsUrl = plstats_url("/matches/$season/");
 }
 
+// "After Round N": the highest round with a result in this season
+$afterRound = 0;
+if (!$isArchive) {
+  $seasonStartYear = (int)substr($season, 0, 4);
+  $roundStmt = $pdo->prepare("
+    SELECT MAX(Round)
+    FROM Matches
+    WHERE DeleteDate IS NULL
+      AND HomeTeamScore IS NOT NULL
+      AND AwayTeamScore IS NOT NULL
+      AND Date >= :season_start
+      AND Date < :season_end
+  ");
+  $roundStmt->execute([
+    'season_start' => "$seasonStartYear-08-01 00:00:00",
+    'season_end'   => ($seasonStartYear + 1) . '-08-01 00:00:00',
+  ]);
+  $afterRound = (int)$roundStmt->fetchColumn();
+}
+
+// Seasons grouped by decade of their start year ("2020s", "2010s", ...)
+$seasonsByDecade = [];
+foreach ($seasons as $s) {
+  $seasonsByDecade[floor((int)substr($s['Label'], 0, 4) / 10) * 10 . 's'][] = $s;
+}
+
+// Relegation places: 18th-20th in every season since 2000-01 (20 clubs)
+const TABLE_RELEGATION_FROM = 18;
+
+/**
+ * Goal difference with a sign and a real minus (−).
+ */
+function table_gd(int $gd): string
+{
+  if ($gd > 0) {
+    return '+' . $gd;
+  }
+
+  return $gd < 0 ? '−' . abs($gd) : '0';
+}
+
 /* -------------------------------------------------
    SEO metadata
 ------------------------------------------------- */
@@ -172,13 +213,14 @@ if ($isArchive) {
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <?php include '../includes/blocks/head.php' ?>
 
   <title><?= htmlspecialchars($pageTitle) ?></title>
   <meta name="description" content="<?= htmlspecialchars($pageDesc) ?>" />
   <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/stats.css')) ?>" />
+  <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/table.css')) ?>" />
 
   <!-- Canonical -->
   <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl) ?>" />
@@ -226,145 +268,186 @@ if ($isArchive) {
   <div class="container content_container">
     <?php include '../includes/blocks/navbar_side.php' ?>
 
-    <div class="content">
+    <div class="content table_page">
 
       <?php include '../includes/components/breadcrumbs.php' ?>
 
-      <h1><?= htmlspecialchars($pageHeading) ?></h1>
+      <!-- HEADER: title, updated line, Overall / Home / Away toggle -->
+      <header class="table_header">
+        <div class="table_header_main">
+          <h1 class="entity_title table_title"><span class="entity_name">Premier League Table</span> <span class="entity_season num"><?= htmlspecialchars($season) ?></span></h1>
 
-      <p class="page_meta">
-        <?php if ($isFinal): ?>
-          Final table<?php if ($champion): ?> • Champions: <a href="<?= htmlspecialchars(plstats_team_url($champion['slug'])) ?>"><?= htmlspecialchars($champion['name']) ?></a><?php endif; ?>
-        <?php elseif ($updatedAt): ?>
-          Updated <time datetime="<?= htmlspecialchars($updatedAt) ?>"><?= plstats_format_date($updatedAt) ?></time>
-        <?php endif; ?>
-        <?php if ($resultsUrl): ?>
-          • <a href="<?= htmlspecialchars($resultsUrl) ?>"><?= $isArchive ? htmlspecialchars("$season results") : 'Fixtures &amp; results' ?></a>
-        <?php endif; ?>
-      </p>
+          <p class="table_meta">
+            <?php if (!$isArchive): ?>
+              <?php
+              $metaParts = [];
+              if ($afterRound > 0) {
+                $metaParts[] = 'After Round ' . $afterRound;
+              }
+              if ($updatedAt) {
+                $metaParts[] = 'Updated ' . plstats_format_date($updatedAt);
+              }
+              ?>
+              <?php if ($metaParts): ?>
+                <span class="updated_label num"><?= htmlspecialchars(implode(' · ', $metaParts)) ?></span>
+              <?php endif; ?>
+              <a class="table_meta_link" href="<?= htmlspecialchars($resultsUrl) ?>"><span class="label_mobile">Results</span><span class="label_desktop">Fixtures &amp; results</span> <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
+            <?php else: ?>
+              <span class="updated_label">Final table<?php if ($champion): ?> · Champions: <?= htmlspecialchars($champion['name']) ?><?php endif; ?></span>
+              <?php if ($resultsUrl): ?>
+                <a class="table_meta_link" href="<?= htmlspecialchars($resultsUrl) ?>"><?= htmlspecialchars("$season results") ?> <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
+              <?php endif; ?>
+            <?php endif; ?>
+          </p>
+        </div>
+
+        <!-- Shown by JS; without JS all three tables are visible -->
+        <div class="view_tabs table_toggle" role="tablist" aria-label="Table view" hidden>
+          <?php foreach ($tableViews as $i => $view): ?>
+            <button type="button" class="view_tab" role="tab" id="view_btn_<?= $view['id'] ?>" aria-controls="view_panel_<?= $view['id'] ?>" aria-selected="<?= $i === 0 ? 'true' : 'false' ?>" tabindex="<?= $i === 0 ? '0' : '-1' ?>"><?= htmlspecialchars($view['label']) ?></button>
+          <?php endforeach; ?>
+        </div>
+      </header>
 
       <?php if ($seasonStatus === 'Incomplete'): ?>
         <p class="page_notice">Some matches from this season are missing from our data, so this is not the final table.</p>
       <?php endif; ?>
 
-      <!-- VIEW TOGGLE (shown by JS; without JS all three tables are visible) -->
-      <nav class="view_tabs" role="tablist" aria-label="Table view" hidden>
-        <?php foreach ($tableViews as $view): ?>
-          <button
-            class="view_tab"
-            role="tab"
-            id="view_btn_<?= $view['id'] ?>"
-            data-view="<?= $view['id'] ?>"
-            aria-controls="view_panel_<?= $view['id'] ?>"
-            aria-selected="false"><?= htmlspecialchars($view['label']) ?></button>
-        <?php endforeach; ?>
-      </nav>
+      <div class="table_panels" id="tablePanels">
+        <?php foreach ($tableViews as $view):
+          $isOverall    = ($view['id'] === 'overall');
+          $hasDeduction = false;
+        ?>
+          <section id="view_panel_<?= $view['id'] ?>" class="view_panel table_panel table_panel--<?= $view['id'] ?>" role="tabpanel" aria-labelledby="view_btn_<?= $view['id'] ?>">
+            <div class="section_head table_panel_head">
+              <h2 class="section_title<?= $isOverall ? ' visually_hidden_desktop' : '' ?>"><?= htmlspecialchars($view['label']) ?> Table</h2>
 
-      <?php foreach ($tableViews as $view):
-        $isOverall    = ($view['id'] === 'overall');
-        $hasDeduction = false;
-      ?>
-        <section id="view_panel_<?= $view['id'] ?>" class="section_content view_panel" role="tabpanel" aria-labelledby="view_btn_<?= $view['id'] ?>">
-          <h2 class="section_heading"><?= htmlspecialchars($view['label']) ?> Table</h2>
+              <!-- Mobile column sets (shown by JS) -->
+              <div class="col_switch" role="group" aria-label="Columns" hidden>
+                <button type="button" class="col_switch_btn" data-cols="short" aria-pressed="false">Short</button>
+                <button type="button" class="col_switch_btn" data-cols="full" aria-pressed="false">Full</button>
+                <?php if ($isOverall): ?>
+                  <button type="button" class="col_switch_btn" data-cols="form" aria-pressed="false">Form</button>
+                <?php endif; ?>
+              </div>
+            </div>
 
-          <div class="stat_table_wrap">
-            <table class="stat_table">
-              <thead>
-                <tr>
-                  <th scope="col" class="st_pos"><abbr title="Position">Pos</abbr></th>
-                  <th scope="col" class="st_name">Team</th>
-                  <th scope="col"><abbr title="Played">P</abbr></th>
-                  <th scope="col"><abbr title="Won">W</abbr></th>
-                  <th scope="col"><abbr title="Drawn">D</abbr></th>
-                  <th scope="col"><abbr title="Lost">L</abbr></th>
-                  <th scope="col"><abbr title="Goals for">GF</abbr></th>
-                  <th scope="col"><abbr title="Goals against">GA</abbr></th>
-                  <th scope="col"><abbr title="Goal difference">GD</abbr></th>
-                  <th scope="col"><abbr title="Points">Pts</abbr></th>
-                  <?php if ($isOverall): ?>
-                    <th scope="col" class="st_left">Form</th>
-                  <?php endif; ?>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($view['rows'] as $r):
-                  if ($r['deducted'] > 0) {
-                    $hasDeduction = true;
-                  }
-                ?>
+            <div class="card stat_table_wrap table_wrap">
+              <table class="stat_table league_table">
+                <thead>
                   <tr>
-                    <td class="st_pos"><?= $r['pos'] ?></td>
-                    <th scope="row" class="st_name">
-                      <a href="<?= htmlspecialchars(plstats_team_url($r['slug'])) ?>">
-                        <?php if ($r['logo']): ?>
-                          <img src="<?= htmlspecialchars($r['logo']) ?>" alt="<?= htmlspecialchars($r['name']) ?> logo" loading="lazy" width="22" height="22">
-                        <?php endif; ?>
-                        <span><?= htmlspecialchars($r['name']) ?></span>
-                      </a>
-                    </th>
-                    <td><?= $r['played'] ?></td>
-                    <td><?= $r['won'] ?></td>
-                    <td><?= $r['drawn'] ?></td>
-                    <td><?= $r['lost'] ?></td>
-                    <td><?= $r['gf'] ?></td>
-                    <td><?= $r['ga'] ?></td>
-                    <td><?= ($r['gd'] > 0 ? '+' : '') . $r['gd'] ?></td>
-                    <td class="st_strong"><?= $r['points'] ?><?= $r['deducted'] > 0 ? '*' : '' ?></td>
+                    <th scope="col" class="st_pos col_pos"><abbr title="Position">Pos</abbr></th>
+                    <th scope="col" class="st_name col_team">Team</th>
+                    <th scope="col" class="col_p"><abbr title="Played">P</abbr></th>
+                    <th scope="col" class="col_w"><abbr title="Won">W</abbr></th>
+                    <th scope="col" class="col_d"><abbr title="Drawn">D</abbr></th>
+                    <th scope="col" class="col_l"><abbr title="Lost">L</abbr></th>
+                    <th scope="col" class="col_gf"><abbr title="Goals for">GF</abbr></th>
+                    <th scope="col" class="col_ga"><abbr title="Goals against">GA</abbr></th>
+                    <th scope="col" class="col_gd"><abbr title="Goal difference">GD</abbr></th>
+                    <th scope="col" class="col_pts"><abbr title="Points">Pts</abbr></th>
                     <?php if ($isOverall): ?>
-                      <td class="st_left">
-                        <?php foreach (str_split($r['form']) as $result):
-                          if (!isset($formClasses[$result])) {
-                            continue;
-                          }
-                        ?>
-                          <span class="form_badge <?= $formClasses[$result] ?>" title="<?= $formLabels[$result] ?>"><?= $result ?></span>
-                        <?php endforeach; ?>
-                      </td>
+                      <th scope="col" class="col_form">Form</th>
                     <?php endif; ?>
                   </tr>
-                <?php endforeach; ?>
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  <?php foreach ($view['rows'] as $r):
+                    if ($r['deducted'] > 0) {
+                      $hasDeduction = true;
+                    }
+                    $rowClasses = [];
+                    if ($r['pos'] >= TABLE_RELEGATION_FROM) {
+                      $rowClasses[] = 'is_relegation';
+                      if ($r['pos'] === TABLE_RELEGATION_FROM) {
+                        $rowClasses[] = 'is_relegation_first';
+                      }
+                    }
+                    $isChampionRow = ($isFinal && $isOverall && $r['pos'] === 1);
+                    if ($isChampionRow) {
+                      $rowClasses[] = 'is_champion';
+                    }
+                  ?>
+                    <tr<?= $rowClasses ? ' class="' . implode(' ', $rowClasses) . '"' : '' ?>>
+                      <td class="st_pos col_pos num"><?= $r['pos'] ?></td>
+                      <th scope="row" class="st_name col_team">
+                        <a href="<?= htmlspecialchars(plstats_team_url($r['slug'])) ?>">
+                          <?= team_badge(['Name' => $r['name'], 'Slug' => $r['slug'], 'Logo' => $r['logo']], 28) ?>
+                          <span class="team_name"><?= htmlspecialchars($r['name']) ?></span>
+                        </a>
+                        <?php if ($isChampionRow): ?>
+                          <span class="champion_tag">Champions</span>
+                        <?php endif; ?>
+                      </th>
+                      <td class="col_p num"><?= $r['played'] ?></td>
+                      <td class="col_w num"><?= $r['won'] ?></td>
+                      <td class="col_d num"><?= $r['drawn'] ?></td>
+                      <td class="col_l num"><?= $r['lost'] ?></td>
+                      <td class="col_gf num"><?= $r['gf'] ?></td>
+                      <td class="col_ga num"><?= $r['ga'] ?></td>
+                      <td class="col_gd num"><?= table_gd($r['gd']) ?></td>
+                      <td class="col_pts num"><?= $r['points'] ?><?= $r['deducted'] > 0 ? '*' : '' ?></td>
+                      <?php if ($isOverall): ?>
+                        <td class="col_form">
+                          <?php foreach (str_split($r['form']) as $result):
+                            if (!isset($formClasses[$result])) {
+                              continue;
+                            }
+                          ?><span class="form_badge <?= $formClasses[$result] ?>" title="<?= $formLabels[$result] ?>"><?= $result ?></span><?php endforeach; ?>
+                        </td>
+                      <?php endif; ?>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
 
-          <?php if ($isOverall): ?>
-            <p class="table_note">Form shows the last five results<?= $isFinal ? ' of the season' : '' ?>, oldest to newest from left to right.</p>
-          <?php endif; ?>
+            <div class="table_legend">
+              <?php if ($isFinal && $isOverall): ?>
+                <span class="legend_item legend_item--champion">Champions</span>
+              <?php endif; ?>
+              <span class="legend_item legend_item--relegation">Relegation places (18th–20th)</span>
+              <?php if ($isOverall): ?>
+                <span class="legend_note">Form shows the last five results<?= $isFinal ? ' of the season' : '' ?>, oldest to newest from left to right.</span>
+              <?php endif; ?>
+            </div>
 
-          <?php if ($hasDeduction): ?>
-            <p class="table_note">
-              * Points after deduction:
-              <?php
-              $deductions = [];
-              foreach ($view['rows'] as $r) {
-                if ($r['deducted'] > 0) {
-                  $deductions[] = htmlspecialchars($r['name']) . ' (−' . $r['deducted'] . ')';
+            <?php if ($hasDeduction): ?>
+              <p class="table_note">
+                * Points after deduction:
+                <?php
+                $deductions = [];
+                foreach ($view['rows'] as $r) {
+                  if ($r['deducted'] > 0) {
+                    $deductions[] = htmlspecialchars($r['name']) . ' (−' . $r['deducted'] . ')';
+                  }
                 }
-              }
-              echo implode(', ', $deductions);
-              ?>
-            </p>
-          <?php endif; ?>
-        </section>
-      <?php endforeach; ?>
+                echo implode(', ', $deductions);
+                ?>
+              </p>
+            <?php endif; ?>
+          </section>
+        <?php endforeach; ?>
+      </div>
 
-      <!-- SEASONS (crawlable links to every stored season) -->
+      <!-- SEASONS (every stored season, grouped by decade) -->
       <?php if (count($seasons) > 1): ?>
-        <section class="section_content">
-          <h2 class="section_heading">Premier League Tables by Season</h2>
-          <ul class="link_chips">
-            <?php foreach ($seasons as $s):
-              $chipUrl = ($s['Label'] === $defaultSeason) ? plstats_table_url() : plstats_table_url($s['Label']);
-            ?>
-              <li>
-                <?php if ($s['Label'] === $season): ?>
-                  <span class="chip_current" aria-current="page"><?= htmlspecialchars($s['Label']) ?></span>
-                <?php else: ?>
-                  <a href="<?= htmlspecialchars($chipUrl) ?>"><?= htmlspecialchars($s['Label']) ?></a>
-                <?php endif; ?>
-              </li>
-            <?php endforeach; ?>
-          </ul>
+        <section class="table_seasons card" aria-labelledby="table_seasons_title">
+          <h2 class="section_title" id="table_seasons_title">Premier League tables by season</h2>
+          <?php foreach ($seasonsByDecade as $decade => $decadeSeasons): ?>
+            <div class="season_group">
+              <h3 class="season_group_label"><?= htmlspecialchars($decade) ?></h3>
+              <ul class="season_chips">
+                <?php foreach ($decadeSeasons as $s):
+                  $chipUrl = ($s['Label'] === $defaultSeason) ? plstats_table_url() : plstats_table_url($s['Label']);
+                ?>
+                  <li>
+                    <a class="season_chip num" href="<?= htmlspecialchars($chipUrl) ?>"<?= $s['Label'] === $season ? ' aria-current="page"' : '' ?>><?= htmlspecialchars($s['Label']) ?></a>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            </div>
+          <?php endforeach; ?>
         </section>
       <?php endif; ?>
 
@@ -374,44 +457,83 @@ if ($isArchive) {
   <?php include '../includes/blocks/footer.php' ?>
 
   <script>
-    /* ── Overall / Home / Away toggle ────────────────────────── */
     (function() {
-      var nav = document.querySelector('.view_tabs');
-      if (!nav) return;
+      var panelsWrap = document.getElementById('tablePanels');
+      if (!panelsWrap) return;
 
-      var tabs = Array.prototype.slice.call(nav.querySelectorAll('.view_tab'));
-      var panels = Array.prototype.slice.call(document.querySelectorAll('.view_panel'));
+      /* ── Overall / Home / Away tabs ────────────────────────── */
+      var list = document.querySelector('.table_toggle');
+      var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+      var panels = Array.prototype.slice.call(panelsWrap.querySelectorAll('[role="tabpanel"]'));
 
-      /* Progressive enhancement: reveal the toggle only when JS runs */
-      nav.hidden = false;
+      /* Progressive enhancement: without JS every panel is shown stacked */
+      list.hidden = false;
+      panelsWrap.classList.add('js_tabs');
 
-      function activate(tab) {
+      function activate(tab, focus) {
         tabs.forEach(function(t) {
-          t.classList.remove('view_tab--active');
-          t.setAttribute('aria-selected', 'false');
+          var on = (t === tab);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+          t.tabIndex = on ? 0 : -1;
+          t.classList.toggle('view_tab--active', on);
         });
         panels.forEach(function(p) {
-          p.style.display = 'none';
+          p.classList.toggle('is_active', p.id === tab.getAttribute('aria-controls'));
         });
-
-        tab.classList.add('view_tab--active');
-        tab.setAttribute('aria-selected', 'true');
-
-        var panel = document.getElementById('view_panel_' + tab.dataset.view);
-        if (panel) panel.style.display = '';
+        if (focus) tab.focus();
       }
 
-      /* Resolve initial view from URL hash, default to overall */
-      var hash = window.location.hash.replace('#', '');
-      var initTab = tabs.find(function(t) {
-        return t.dataset.view === hash;
-      }) || tabs[0];
-      activate(initTab);
-
-      tabs.forEach(function(tab) {
+      tabs.forEach(function(tab, i) {
         tab.addEventListener('click', function() {
-          activate(tab);
-          history.replaceState(null, '', '#' + tab.dataset.view);
+          activate(tab, false);
+          history.replaceState(null, '', '#' + tab.id.replace('view_btn_', ''));
+        });
+        tab.addEventListener('keydown', function(e) {
+          var next = null;
+          if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+          if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+          if (e.key === 'Home') next = tabs[0];
+          if (e.key === 'End') next = tabs[tabs.length - 1];
+          if (next) {
+            e.preventDefault();
+            activate(next, true);
+          }
+        });
+      });
+
+      var hash = window.location.hash.replace('#', '');
+      activate(tabs.filter(function(t) { return t.id === 'view_btn_' + hash; })[0] || tabs[0], false);
+
+      /* ── Mobile column sets: Short / Full / Form ───────────── */
+      var COLS_KEY = 'plstats_table_cols';
+      var cols = 'short';
+      try {
+        var saved = window.localStorage.getItem(COLS_KEY);
+        if (saved === 'short' || saved === 'full' || saved === 'form') cols = saved;
+      } catch (e) {}
+
+      var switches = Array.prototype.slice.call(panelsWrap.querySelectorAll('.col_switch'));
+      var buttons = Array.prototype.slice.call(panelsWrap.querySelectorAll('.col_switch_btn'));
+
+      function setCols(value, save) {
+        cols = value;
+        panelsWrap.classList.remove('cols_short', 'cols_full', 'cols_form');
+        panelsWrap.classList.add('cols_' + value);
+        buttons.forEach(function(b) {
+          b.setAttribute('aria-pressed', b.getAttribute('data-cols') === value ? 'true' : 'false');
+        });
+        if (save) {
+          try { window.localStorage.setItem(COLS_KEY, value); } catch (e) {}
+        }
+      }
+
+      switches.forEach(function(s) { s.hidden = false; });
+      panelsWrap.classList.add('js_cols');
+      setCols(cols, false);
+
+      buttons.forEach(function(b) {
+        b.addEventListener('click', function() {
+          setCols(b.getAttribute('data-cols'), true);
         });
       });
     }());

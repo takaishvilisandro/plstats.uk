@@ -1,209 +1,175 @@
-/* Fixed Topbar */
+/* ==================================================
+   Site shell
+   Mobile (< 820px): sticky app bar + fixed bottom tab bar
+   Desktop (>= 820px): sticky top bar with inline navigation
+================================================== */
+
+/* ── Top bar ────────────────────────────────────────────────── */
 .topbar {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  background-color: var(--dark);
   z-index: 1000;
-  border-bottom: 1px solid var(--brand);
+  background-color: var(--dark);
+  border-bottom: 1px solid var(--border);
 }
 
 .topbar_container {
-  height: 60px;
+  height: var(--topbar-h-desktop);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  column-gap: 28px;
+}
+
+.logo a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .logo img {
   height: 30px;
+  width: auto;
 }
 
+/* Desktop navigation */
+.top_nav ul {
+  display: flex;
+  column-gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.top_nav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.top_nav a:hover {
+  background: var(--surface-raised);
+}
+
+.top_nav a.active {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+/* Search (rendered only when $search_enabled) */
 .search-bar {
-  width: 500px;
+  flex: 1;
+  max-width: 420px;
 }
 
 .search-bar input {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: var(--dark-secondary);
-  border: none;
-  border-radius: 6px;
-  color: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-primary);
 }
 
-.user-actions .telegram-btn {
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  font-size: 15px;
-  background: var(--brand);
-  border: none;
-  padding: 8px 12px;
-  color: var(--dark);
-  border-radius: 5px;
-  cursor: pointer;
+/* Season pill */
+.season_pill {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
-.user-actions .telegram-btn span {
-  margin-right: 5px;
-}
-
-.user-actions .telegram-btn i {
-  font-size: 19px;
-  color: var(--dark);
-}
-
-.mobile_burger_container {
+/* ── Bottom tab bar (mobile only) ───────────────────────────── */
+.bottom_nav {
   display: none;
 }
 
-/* Sidebar */
-.sidebar {
-  width: 220px;
-  height: 100%;
-  position: sticky;
-  top: 90px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  row-gap: 10px;
-}
-
-.sidebar_items_container {
-  background-color: var(--dark);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.sidebar nav ul {
-  list-style: none;
-}
-
-.sidebar nav ul li a {
-  font-size: 15px;
-  display: block;
-  padding: 15px;
-  color: white;
-  text-decoration: none;
-  transition: 0.2s;
-}
-
-.sidebar nav ul li a:hover,
-.sidebar nav ul li a.active {
-  background-color: var(--brand);
-  color: var(--dark);
-}
-
-.sidebar_social_icons {
-  display: flex;
-  justify-content: space-between;
-  padding: 15px;
-}
-
-.sidebar_social_icons a {
-  font-size: 19px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--brand);
-  color: var(--dark);
-  width: 37px;
-  height: 37px;
-  border-radius: 100%;
-  transition: 0.3s ease;
-}
-
-.mobile_navigation {
-  display: none;
-  background-color: var(--dark);
-}
-
-.mobile_navigation ul li a {
-  color: white;
-}
-
-.mobile_navigation ul li a.active {
-  color: var(--brand);
-}
-
-.mobile_navigation ul li {
-  padding: 10px 0px;
-}
-
-.burger i {
-  transition:
-    transform 0.25s ease,
-    opacity 0.2s ease;
-}
-
-.burger i.fa-times {
-  transform: rotate(90deg);
-}
-
-@media screen and (min-width: 821px) {
-  .mobile_navigation {
-    display: none !important;
+@media screen and (max-width: 819.98px) {
+  body {
+    padding-bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom) + 16px);
   }
-}
 
-@media screen and (max-width: 820px) {
+  .topbar_container {
+    height: var(--topbar-h);
+    justify-content: space-between;
+  }
+
   .logo img {
     height: 27px;
   }
 
-  .search-bar {
+  .top_nav,
+  .search-bar,
+  .season_pill_prefix {
     display: none;
   }
 
-  .user-actions .telegram-btn {
-    display: none;
+  .season_pill {
+    font-size: 12px;
+    padding: 6px 10px;
   }
 
-  .mobile_burger_container {
-    display: flex;
-    column-gap: 5px;
-  }
-
-  .user-actions .telegram-btn.mobile {
-    display: flex;
-  }
-
-  .burger {
-    display: flex;
-    align-items: center;
-    font-size: 16px;
-    background: var(--dark);
-    border: none;
-    padding: 0px;
-    color: var(--text-primary);
-    border-radius: 5px;
-    cursor: pointer;
-  }
-
-  .burger i.active {
-    font-size: 27px;
-  }
-
-  .burger i {
-    font-size: 24px;
-  }
-
-  .sidebar {
-    display: none;
-    top: 0px;
-  }
-
-  .mobile_navigaton {
-    display: flex;
-    flex-direction: column;
+  .bottom_nav {
     position: fixed;
-    top: 60px;
     left: 0;
     right: 0;
-    background-color: var(--dark);
-    z-index: 999;
-    border-bottom: 1px solid var(--brand);
+    bottom: 0;
+    z-index: 1000;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: calc(var(--bottomnav-h) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(18, 23, 33, 0.96);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-strong);
+  }
+
+  .bottom_nav_item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    row-gap: 3px;
+    min-height: 44px;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .bottom_nav_icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 30px;
+    border-radius: var(--radius-pill);
+    font-size: 17px;
+  }
+
+  .bottom_nav_label {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+
+  .bottom_nav_item.active {
+    color: var(--brand);
+  }
+
+  .bottom_nav_item.active .bottom_nav_icon {
+    background: var(--brand-soft-strong);
   }
 }

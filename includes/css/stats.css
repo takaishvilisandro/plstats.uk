@@ -4,38 +4,7 @@
    view toggles, KPI cards, entity header, filters)
 ================================================== */
 
-/* ── Breadcrumbs ────────────────────────────────────────────── */
-.breadcrumbs {
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.breadcrumbs ol {
-  display: flex;
-  flex-wrap: wrap;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.breadcrumbs li:not(:last-child)::after {
-  content: "›";
-  margin: 0 7px;
-}
-
-.breadcrumbs a {
-  color: var(--text-secondary);
-  text-decoration: none;
-}
-
-.breadcrumbs a:hover {
-  color: var(--brand);
-}
-
-.breadcrumbs span {
-  color: var(--text-primary);
-}
+/* Breadcrumbs, KPI cards and the player header live in components.css / player.css */
 
 .section_heading a {
   color: inherit;
@@ -122,20 +91,21 @@
 .view_tab--active,
 .view_tab--active:hover {
   background: var(--brand);
-  color: #fff;
+  color: var(--dark);
 }
 
 .view_panel {
   margin-top: 20px !important;
 }
 
-/* ── Stat table (scrolls horizontally, first column(s) pinned) ─ */
+/* ── Stat table (card; scrolls sideways inside the card; first column(s) pinned) ─ */
 .stat_table_wrap {
   margin-top: 10px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
 }
 
 .stat_table {
@@ -148,12 +118,13 @@
 
 .stat_table th,
 .stat_table td {
-  padding: 9px 10px;
+  padding: 10px;
   text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
   font-weight: normal;
   background-color: var(--dark);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border);
 }
 
 .stat_table tbody tr:last-child th,
@@ -162,10 +133,12 @@
 }
 
 .stat_table thead th {
-  background-color: var(--brand);
-  color: var(--dark);
-  font-weight: bold;
-  letter-spacing: 0.5px;
+  background-color: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
 .stat_table abbr {
@@ -189,10 +162,7 @@
   width: 40px;
   min-width: 40px;
   color: var(--text-secondary);
-}
-
-.stat_table thead .st_pos {
-  color: var(--dark);
+  font-weight: 700;
 }
 
 .stat_table .st_name {
@@ -200,7 +170,6 @@
   left: 0;
   z-index: 1;
   text-align: left;
-  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
 .stat_table .st_pos + .st_name {
@@ -211,12 +180,11 @@
 .stat_table .st_name .st_plain {
   display: flex;
   align-items: center;
-  column-gap: 8px;
+  column-gap: 10px;
+  font-weight: 600;
 }
 
 .stat_table .st_name img {
-  width: 22px;
-  height: 22px;
   object-fit: contain;
   flex-shrink: 0;
 }
@@ -226,7 +194,7 @@
 }
 
 .stat_table .st_strong {
-  font-weight: bold;
+  font-weight: 800;
 }
 
 .stat_table .st_muted {
@@ -237,115 +205,16 @@
   display: none;
 }
 
-/* Form badges (W/D/L) */
-.form_badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: bold;
-  color: var(--dark);
+@media (hover: hover) and (min-width: 820px) {
+  .stat_table tbody tr:hover th,
+  .stat_table tbody tr:hover td {
+    background-color: var(--surface-sunken);
+  }
 }
 
-.form_badge + .form_badge {
-  margin-left: 3px;
-}
+/* Form badges (W/D/L) live in components.css */
 
-.form_win {
-  background-color: #2ecc71;
-}
-
-.form_draw {
-  background-color: #f1c40f;
-}
-
-.form_loss {
-  background-color: #e74c3c;
-}
-
-.table_note {
-  color: var(--text-secondary);
-  font-size: 12px !important;
-  line-height: 18px !important;
-  margin-top: 8px;
-}
-
-/* ── KPI cards ──────────────────────────────────────────────── */
-.kpi_grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 12px;
-  margin-top: 15px;
-}
-
-.kpi_card {
-  background-color: var(--dark);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  padding: 14px 10px;
-  text-align: center;
-}
-
-.kpi_label {
-  color: var(--text-secondary);
-  font-size: 13px !important;
-  margin-bottom: 0 !important;
-}
-
-.kpi_value {
-  font-size: 22px !important;
-  color: var(--text-primary);
-  margin-top: 4px;
-}
-
-/* ── Entity header (player hero) ────────────────────────────── */
-.entity_header {
-  background-color: var(--dark);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 18px;
-}
-
-.entity_header h1 {
-  margin-bottom: 0;
-}
-
-.entity_facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 18px;
-  list-style: none;
-  padding: 0;
-  margin: 12px 0 0;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.entity_facts strong {
-  color: var(--text-primary);
-  font-weight: normal;
-}
-
-.entity_facts a {
-  display: inline-flex;
-  align-items: center;
-  column-gap: 6px;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-
-.entity_facts a:hover {
-  color: var(--brand);
-}
-
-.entity_facts img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
+/* .table_note lives in components.css */
 
 /* ── Filter bar (client-side only, no URLs) ─────────────────── */
 .filter_bar {
@@ -443,14 +312,5 @@
   .stat_table .st_name img {
     width: 20px;
     height: 20px;
-  }
-
-  .kpi_grid {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 8px;
-  }
-
-  .kpi_value {
-    font-size: 20px !important;
   }
 }
