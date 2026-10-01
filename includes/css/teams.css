@@ -137,6 +137,63 @@
   margin-bottom: 0px;
 }
 
+.stat_box_link {
+  display: block;
+  text-decoration: none;
+  transition: border-color 0.25s ease;
+}
+
+.stat_box_link:hover {
+  border-color: var(--brand);
+}
+
+/* Next fixture */
+.next_fixture {
+  display: block;
+  text-decoration: none;
+  text-align: center;
+  color: var(--text-primary);
+  transition: border-color 0.25s ease;
+}
+
+.next_fixture:hover {
+  border-color: var(--brand);
+}
+
+.next_fixture_teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.next_fixture_team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  row-gap: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.next_fixture_team img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.next_fixture_vs {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.next_fixture_meta {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-top: 12px;
+}
+
 /* =============== RECENT MATCHES TABLE =============== */
 .recent_matches_table {
   display: grid;

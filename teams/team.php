@@ -48,6 +48,8 @@ $matchesStmt = $pdo->prepare("
     JOIN Teams at ON at.Id = m.AwayTeamId
     WHERE (m.HomeTeamId = :team_id OR m.AwayTeamId = :team_id)
       AND m.DeleteDate IS NULL
+      AND m.HomeTeamScore IS NOT NULL
+      AND m.AwayTeamScore IS NOT NULL
     ORDER BY m.Date DESC
     LIMIT 5
 ");
@@ -57,6 +59,66 @@ $matchesStmt->execute([
 ]);
 
 $recentMatches = $matchesStmt->fetchAll();
+
+// ------------------------------------
+// Key stats for the current season
+// (no row, e.g. a relegated team => block is hidden)
+// ------------------------------------
+$keyStats = null;
+try {
+  $currentSeason = (string)$pdo->query("
+    SELECT Label
+    FROM Seasons
+    WHERE Status = 'InProgress'
+      AND DeleteDate IS NULL
+    LIMIT 1
+  ")->fetchColumn();
+
+  if ($currentSeason !== '') {
+    $statsStmt = $pdo->prepare("
+      SELECT s.Position, s.Form, x.GoalsScored, x.GoalsConceded, x.CleanSheets
+      FROM Standings s
+      JOIN TeamSeasonStats x ON x.Season = s.Season AND x.TeamId = s.TeamId
+      WHERE s.Season = :season AND s.TeamId = :team_id
+        AND s.DeleteDate IS NULL AND x.DeleteDate IS NULL
+    ");
+    $statsStmt->execute([
+      'season'  => $currentSeason,
+      'team_id' => $team['Id']
+    ]);
+    $keyStats = $statsStmt->fetch() ?: null;
+  }
+} catch (PDOException $e) {
+  error_log('Team key stats query failed.');
+  $keyStats = null;
+}
+
+// ------------------------------------
+// Next fixture (earliest unplayed match)
+// Matches.Date is UK time but the database clock
+// is not, so the current UK time is passed in.
+// ------------------------------------
+$nowUk = (new DateTime('now', new DateTimeZone('Europe/London')))->format('Y-m-d H:i:s');
+
+$nextFixtureStmt = $pdo->prepare("
+    SELECT m.Id, m.Date, m.Round,
+           ht.Name AS HomeName, ht.Slug AS HomeSlug, ht.Logo AS HomeLogo,
+           at.Name AS AwayName, at.Slug AS AwaySlug, at.Logo AS AwayLogo
+    FROM Matches m
+    JOIN Teams ht ON ht.Id = m.HomeTeamId
+    JOIN Teams at ON at.Id = m.AwayTeamId
+    WHERE (m.HomeTeamId = :team_id OR m.AwayTeamId = :team_id)
+      AND m.HomeTeamScore IS NULL AND m.DeleteDate IS NULL
+      AND m.Round IS NOT NULL
+      AND m.Date > :now_uk
+    ORDER BY m.Date
+    LIMIT 1
+");
+$nextFixtureStmt->execute([
+  'team_id' => $team['Id'],
+  'now_uk'  => $nowUk
+]);
+$nextFixture = $nextFixtureStmt->fetch() ?: null;
 
 // Helper function for season calculation
 function getSeasonFromDate(string $date): string
@@ -122,36 +184,58 @@ function getSeasonFromDate(string $date): string
         </div>
       </section>
 
-      <!-- NEXT FIXTURE -->
-      <section class="section_content">
-        <h2 class="section_heading">Next Fixture</h2>
-        <div class="fixture_box">
-          <p>Upcoming fixture data coming soon</p>
-        </div>
-      </section>
+      <!-- NEXT FIXTURE (hidden when there is no upcoming match) -->
+      <?php if ($nextFixture):
+        // Matches.Date is UK wall-clock time
+        $kickOff = new DateTime($nextFixture['Date'], new DateTimeZone('Europe/London'));
+        $nextSeason = getSeasonFromDate($nextFixture['Date']);
+        $nextFixtureUrl = plstats_url("/matches/{$nextSeason}/{$nextFixture['Round']}/{$nextFixture['HomeSlug']}-vs-{$nextFixture['AwaySlug']}/");
+      ?>
+        <section class="section_content">
+          <h2 class="section_heading">Next Fixture</h2>
+          <a href="<?= htmlspecialchars($nextFixtureUrl) ?>" class="fixture_box next_fixture">
+            <div class="next_fixture_teams">
+              <div class="next_fixture_team">
+                <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($nextFixture['HomeLogo'], '/'))) ?>" alt="<?= htmlspecialchars($nextFixture['HomeName']) ?> logo">
+                <span><?= htmlspecialchars($nextFixture['HomeName']) ?></span>
+              </div>
+              <span class="next_fixture_vs">vs</span>
+              <div class="next_fixture_team">
+                <img src="<?= htmlspecialchars(plstats_url('/' . ltrim($nextFixture['AwayLogo'], '/'))) ?>" alt="<?= htmlspecialchars($nextFixture['AwayName']) ?> logo">
+                <span><?= htmlspecialchars($nextFixture['AwayName']) ?></span>
+              </div>
+            </div>
+            <p class="next_fixture_meta">
+              <time datetime="<?= $kickOff->format('c') ?>"><?= $kickOff->format('D j M Y, H:i') ?></time> UK time • Round <?= (int)$nextFixture['Round'] ?>
+            </p>
+          </a>
+        </section>
+      <?php endif; ?>
 
-      <!-- TEAM STATS (TEMP placeholders) -->
-      <section class="section_content">
-        <h2 class="section_heading">Key Stats</h2>
-        <div class="team_stats_grid">
-          <div class="stat_box">
-            <p class="stat_label">Goals Scored</p>
-            <p class="stat_value"></p>
+      <!-- TEAM STATS (current season; hidden when the team has no row) -->
+      <?php if ($keyStats): ?>
+        <section class="section_content">
+          <h2 class="section_heading">Key Stats</h2>
+          <div class="team_stats_grid">
+            <div class="stat_box">
+              <p class="stat_label">Goals Scored</p>
+              <p class="stat_value"><?= (int)$keyStats['GoalsScored'] ?></p>
+            </div>
+            <div class="stat_box">
+              <p class="stat_label">Goals Conceded</p>
+              <p class="stat_value"><?= (int)$keyStats['GoalsConceded'] ?></p>
+            </div>
+            <div class="stat_box">
+              <p class="stat_label">Clean Sheets</p>
+              <p class="stat_value"><?= (int)$keyStats['CleanSheets'] ?></p>
+            </div>
+            <a href="<?= htmlspecialchars(plstats_url('/table/')) ?>" class="stat_box stat_box_link">
+              <p class="stat_label">League Position</p>
+              <p class="stat_value"><?= (int)$keyStats['Position'] ?></p>
+            </a>
           </div>
-          <div class="stat_box">
-            <p class="stat_label">Goals Conceded</p>
-            <p class="stat_value"></p>
-          </div>
-          <div class="stat_box">
-            <p class="stat_label">Clean Sheets</p>
-            <p class="stat_value"></p>
-          </div>
-          <div class="stat_box">
-            <p class="stat_label">League Position</p>
-            <p class="stat_value"></p>
-          </div>
-        </div>
-      </section>
+        </section>
+      <?php endif; ?>
 
       <!-- RECENT MATCHES -->
       <section class="section_content">

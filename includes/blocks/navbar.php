@@ -31,6 +31,8 @@ $_navPath = plstats_request_path();
       <ul>
         <li><a href="<?= htmlspecialchars(plstats_url('/')) ?>" title="Home"<?= $_navPath === '/' ? ' class="active"' : '' ?>>Home</a></li>
         <li><a href="<?= htmlspecialchars(plstats_url('/matches/')) ?>" title="Matches"<?= str_starts_with($_navPath, '/matches/') ? ' class="active"' : '' ?>>Matches</a></li>
+        <li><a href="<?= htmlspecialchars(plstats_url('/table/')) ?>" title="Premier League Table"<?= str_starts_with($_navPath, '/table/') ? ' class="active"' : '' ?>>Table</a></li>
+        <li><a href="<?= htmlspecialchars(plstats_url('/players/')) ?>" title="Players"<?= str_starts_with($_navPath, '/players/') ? ' class="active"' : '' ?>>Players</a></li>
         <li><a href="<?= htmlspecialchars(plstats_url('/teams/')) ?>" title="Teams"<?= str_starts_with($_navPath, '/teams/') ? ' class="active"' : '' ?>>Teams</a></li>
         <li><a href="<?= htmlspecialchars(plstats_url('/author/')) ?>" title="About the Author"<?= str_starts_with($_navPath, '/author/') ? ' class="active"' : '' ?>>About</a></li>
       </ul>

@@ -70,6 +70,28 @@ RewriteRule ^teams/?$ teams/index.php [L]
 
 # ==================================================
 
+# 6b. LEAGUE TABLE
+
+# /table/ = current season, /table/YYYY-YYYY/ = past season.
+# /premier-league/table/ was live briefly: table/index.php 301s it to /table/.
+
+# ==================================================
+
+RewriteRule ^table/([0-9]{4}-[0-9]{4})/?$ table/index.php?season=$1 [L,QSA]
+RewriteRule ^table/?$ table/index.php [L]
+RewriteRule ^premier-league/table/?$ table/index.php [L]
+
+# ==================================================
+
+# 6c. PLAYER PROFILE WITH SLUG + PLAYERS DIRECTORY
+
+# ==================================================
+
+RewriteRule ^players/([a-z0-9-]+)/?$ players/player.php?slug=$1 [L,QSA]
+RewriteRule ^players/?$ players/index.php [L]
+
+# ==================================================
+
 # 7. NEWS DETAIL (only when the script exists)
 
 # ==================================================

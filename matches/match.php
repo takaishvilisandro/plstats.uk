@@ -32,7 +32,7 @@ if (!$season || !$round || !$homeSlug || !$awaySlug) {
    Fetch match by season, round, and team slugs
    ADDED: ht.Stadium for location schema
 ---------------------------------------- */
-$stmt = $pdo->prepare("
+$matchSql = "
   SELECT
     m.Id,
     m.Date,
@@ -57,15 +57,44 @@ $stmt = $pdo->prepare("
     AND ht.Slug = :home_slug
     AND at.Slug = :away_slug
     AND m.DeleteDate IS NULL
-  LIMIT 1
-");
+";
 
-$stmt->execute([
+$matchParams = [
   'round' => $round,
   'home_slug' => $homeSlug,
   'away_slug' => $awaySlug
-]);
-$match = $stmt->fetch();
+];
+
+$match = false;
+
+// Season-scoped lookup first (1 Aug of the start year to 1 Aug of the next):
+// Matches holds more than one season, so the URL's season decides the row.
+if (preg_match('/^(\d{4})-\d{4}$/', $season, $seasonParts)) {
+  $seasonStartYear = (int)$seasonParts[1];
+
+  $stmt = $pdo->prepare($matchSql . "
+    AND m.Date >= :season_start
+    AND m.Date < :season_end
+  ORDER BY m.Date, m.Id
+  LIMIT 1
+  ");
+  $stmt->execute($matchParams + [
+    'season_start' => "$seasonStartYear-08-01 00:00:00",
+    'season_end'   => ($seasonStartYear + 1) . '-08-01 00:00:00'
+  ]);
+  $match = $stmt->fetch();
+}
+
+// Fallback: unscoped lookup (newest first), so a URL with the wrong season
+// still resolves and is 301-redirected to the correct season below.
+if (!$match) {
+  $stmt = $pdo->prepare($matchSql . "
+  ORDER BY m.Date DESC, m.Id
+  LIMIT 1
+  ");
+  $stmt->execute($matchParams);
+  $match = $stmt->fetch();
+}
 
 if (!$match) {
   header('HTTP/1.0 404 Not Found');
@@ -107,6 +136,7 @@ $reviewStmt = $pdo->prepare("
   FROM MatchReviews
   WHERE MatchId = :match_id
     AND DeleteDate IS NULL
+  ORDER BY Id DESC
   LIMIT 1
 ");
 $reviewStmt->execute(['match_id' => $matchId]);
@@ -258,8 +288,8 @@ function parseStatsText(string $text): array
 // Detect structured stats vs HTML prose
 $statsData  = null;
 $statsIsRaw = false;
-if (!empty($match['StatsText'])) {
-  $statsText = trim($match['StatsText']);
+$statsText = trim((string)($match['StatsText'] ?? ''));
+if ($statsText !== '') {
   if (stripos($statsText, 'MATCH STATISTICS') === 0) {
     $statsData = parseStatsText($statsText);
   } else {
@@ -386,10 +416,12 @@ if ($review) {
         </div>
       </section>
 
-      <!-- AUTHOR BOX -->
+      <!-- AUTHOR BOX (component not in the repo yet — skipped until it exists) -->
       <?php
       $authorBoxUpdated = $matchDate;
-      include '../includes/components/author-box.php';
+      if (is_file(__DIR__ . '/../includes/components/author-box.php')) {
+        include __DIR__ . '/../includes/components/author-box.php';
+      }
       ?>
 
       <!-- SECTION TAB NAV -->
@@ -451,7 +483,7 @@ if ($review) {
             </div><!-- /.match_stats_visual -->
 
           <?php else: ?>
-            <div class="match_stats_prose"><?= $match['StatsText'] ?></div>
+            <div class="match_stats_prose"><?= nl2br(htmlspecialchars($statsText)) ?></div>
           <?php endif; ?>
 
         </section>
@@ -531,7 +563,7 @@ if ($review) {
       <section id="tab_panel_commentary" class="section_content match_tab_panel" role="tabpanel" aria-labelledby="tab_btn_commentary">
         <h2 class="section_heading"><?= htmlspecialchars($home) ?> vs <?= htmlspecialchars($away) ?> Match Commentary</h2>
         <div class="commentary_box">
-          <?= $match['Commentary'] ? nl2br($match['Commentary']) : '<p>No commentary available.</p>' ?>
+          <?= $match['Commentary'] ? nl2br(htmlspecialchars($match['Commentary'])) : '<p>No commentary available.</p>' ?>
         </div>
       </section>
 
