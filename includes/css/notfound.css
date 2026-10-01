@@ -1,0 +1,330 @@
+/* ==================================================
+   404 page: "404" drawn as a pitch — the 0 is the
+   centre circle, the halfway line runs through it.
+================================================== */
+
+.nf_main {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+/* Explicit link colours everywhere on this page (no default purple) */
+.nf_main a:link,
+.nf_main a:visited {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+/* ── Card ───────────────────────────────────────────────────── */
+.nf_card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  padding: 36px 20px 28px;
+  background: var(--dark);
+  border: 1px solid rgba(57, 169, 151, 0.25);
+  border-radius: 24px;
+  overflow: hidden;
+  text-align: center;
+}
+
+/* ── The number ─────────────────────────────────────────────── */
+.nf_code {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.nf_line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(36px + 56px);
+  height: 2px;
+  background: rgba(57, 169, 151, 0.22);
+}
+
+.nf_digit {
+  position: relative;
+  font-size: 112px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+}
+
+.nf_circle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+  border: 10px solid var(--brand);
+  border-radius: 50%;
+  background: var(--dark);
+}
+
+.nf_spot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+/* ── Text ───────────────────────────────────────────────────── */
+.nf_text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.nf_pill {
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.nf_title {
+  margin: 14px 0 0;
+  padding: 0;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* No heading bar on this page */
+.nf_title::before {
+  display: none;
+}
+
+.nf_lead {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.nf_lead_extra {
+  display: none;
+}
+
+.nf_main a.nf_btn,
+.nf_main a.nf_btn:link,
+.nf_main a.nf_btn:visited {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: 10px;
+  align-self: stretch;
+  min-height: 52px;
+  margin-top: var(--space-5);
+  padding: 0 24px;
+  border-radius: 14px;
+  background: var(--brand);
+  color: var(--dark);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.nf_main a.nf_btn:hover {
+  background: var(--brand-hover);
+}
+
+.nf_main a.nf_btn:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 3px;
+}
+
+/* ── Quick links ────────────────────────────────────────────── */
+.nf_links {
+  margin-top: var(--space-6);
+}
+
+.nf_links_title {
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.nf_links_title::before {
+  display: none;
+}
+
+.nf_grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nf_tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  row-gap: 10px;
+  padding: 16px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: background 0.15s;
+}
+
+.nf_tile:hover {
+  background: var(--surface-sunken);
+}
+
+.nf_tile:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.nf_tile_icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 16px;
+}
+
+.nf_tile_text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nf_tile_text strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.nf_tile_text small {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.nf_note {
+  margin-top: var(--space-6);
+  text-align: center;
+  font-size: var(--fs-md);
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* Very narrow phones: keep "404" on one line */
+@media screen and (max-width: 379.98px) {
+  .nf_digit {
+    font-size: 96px;
+  }
+
+  .nf_circle {
+    width: 84px;
+    height: 84px;
+    border-width: 9px;
+  }
+
+  .nf_line {
+    top: calc(36px + 48px);
+  }
+}
+
+/* ── Desktop ────────────────────────────────────────────────── */
+@media screen and (min-width: 820px) {
+  .nf_card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 48px;
+    padding: 56px;
+    border-radius: 28px;
+    text-align: left;
+  }
+
+  .nf_code {
+    position: relative;
+    gap: 8px;
+  }
+
+  /* The halfway line runs from the card's left edge through the number */
+  .nf_line {
+    left: -56px;
+    right: -24px;
+    top: 50%;
+    margin-top: -1px;
+  }
+
+  .nf_digit {
+    font-size: 168px;
+  }
+
+  .nf_circle {
+    width: 144px;
+    height: 144px;
+    border-width: 14px;
+  }
+
+  .nf_spot {
+    width: 20px;
+    height: 20px;
+  }
+
+  .nf_text {
+    align-items: flex-start;
+  }
+
+  .nf_title {
+    font-size: 44px;
+  }
+
+  .nf_lead {
+    font-size: 17px;
+  }
+
+  .nf_lead_extra {
+    display: inline;
+  }
+
+  .nf_main a.nf_btn,
+  .nf_main a.nf_btn:link,
+  .nf_main a.nf_btn:visited {
+    align-self: flex-start;
+  }
+
+  .nf_links {
+    margin-top: var(--space-7);
+  }
+
+  .nf_grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .nf_tile {
+    flex-direction: row;
+    align-items: center;
+    column-gap: 14px;
+  }
+
+  .nf_note {
+    display: none;
+  }
+}

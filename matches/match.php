@@ -25,8 +25,7 @@ $homeSlug = isset($_GET['home']) ? $_GET['home'] : '';
 $awaySlug = isset($_GET['away']) ? $_GET['away'] : '';
 
 if (!$season || !$round || !$homeSlug || !$awaySlug) {
-  header('HTTP/1.0 404 Not Found');
-  exit;
+  render_404();
 }
 
 /* ----------------------------------------
@@ -98,8 +97,7 @@ if (!$match) {
 }
 
 if (!$match) {
-  header('HTTP/1.0 404 Not Found');
-  exit;
+  render_404();
 }
 
 /* ----------------------------------------

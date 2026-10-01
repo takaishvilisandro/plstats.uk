@@ -10,7 +10,7 @@ const PLAYER_PER90_MIN_MINUTES = 450;
 $playerSlug = $_GET['slug'] ?? '';
 
 if ($playerSlug === '' || !preg_match('/^[a-z0-9-]+$/', $playerSlug)) {
-  plstats_not_found();
+  render_404();
 }
 
 /* -------------------------------------------------
@@ -48,7 +48,7 @@ if (!$player) {
     exit;
   }
 
-  plstats_not_found();
+  render_404();
 }
 
 $canonicalPath = '/players/' . $player['Slug'] . '/';

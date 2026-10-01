@@ -7,8 +7,7 @@ require '../includes/schema-markups/schema-helpers.php';
 $teamSlug = $_GET['slug'] ?? '';
 
 if ($teamSlug === '') {
-  header('HTTP/1.0 404 Not Found');
-  exit;
+  render_404();
 }
 
 // -------------------------------------------------
@@ -25,8 +24,7 @@ $stmt->execute(['slug' => $teamSlug]);
 $team = $stmt->fetch();
 
 if (!$team) {
-  header('HTTP/1.0 404 Not Found');
-  exit;
+  render_404();
 }
 
 $teamId = (int)$team['Id'];

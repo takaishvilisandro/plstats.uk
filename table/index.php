@@ -13,7 +13,7 @@ require '../includes/schema-markups/schema-helpers.php';
 ------------------------------------------------- */
 $requestedSeason = $_GET['season'] ?? '';
 if ($requestedSeason !== '' && !preg_match('/^\d{4}-\d{4}$/', $requestedSeason)) {
-  plstats_not_found();
+  render_404();
 }
 
 $seasons = $pdo->query("
@@ -36,7 +36,7 @@ if ($defaultSeason === '') {
 }
 
 if ($requestedSeason !== '' && !isset($seasonsByLabel[$requestedSeason])) {
-  plstats_not_found();
+  render_404();
 }
 
 if ($requestedSeason !== '' && $requestedSeason === $defaultSeason) {
@@ -48,7 +48,7 @@ $season    = $requestedSeason !== '' ? $requestedSeason : $defaultSeason;
 $isArchive = ($requestedSeason !== '');
 
 if ($season === '') {
-  plstats_not_found();
+  render_404();
 }
 
 $canonicalPath = $isArchive ? "/table/$season/" : '/table/';
@@ -77,7 +77,7 @@ $rows = $stmt->fetchAll();
 
 // No standings => no page (never render an empty table)
 if (!$rows) {
-  plstats_not_found();
+  render_404();
 }
 
 $updatedStmt = $pdo->prepare("

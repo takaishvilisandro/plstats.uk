@@ -268,12 +268,21 @@ function plstats_enforce_canonical_path(string $canonicalPath): void
 }
 
 /**
- * Real 404: status code plus the site's 404 page (never a blank 200).
+ * Real 404: status code plus the site's 404 page (never a blank page and
+ * never a 200). Every unknown player, team, match and season slug calls this.
  */
-function plstats_not_found(): void
+function render_404(): void
 {
   require __DIR__ . '/../../404.php';
   exit;
+}
+
+/**
+ * Older name for render_404().
+ */
+function plstats_not_found(): void
+{
+  render_404();
 }
 
 /* ----------------------------------------

@@ -37,7 +37,7 @@ $players = $stmt->fetchAll();
 
 // No players => no page (never render an empty directory)
 if (!$players) {
-  plstats_not_found();
+  render_404();
 }
 
 $updatedAt = $pdo->query("

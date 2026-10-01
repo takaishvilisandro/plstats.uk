@@ -1,5 +1,6 @@
 <?php
 require '../includes/functions/db.php';
+require_once '../includes/functions/helpers.php';
 require '../includes/schema-markups/schema-helpers.php';
 
 /* -------------------------------------------------
@@ -17,8 +18,7 @@ function getSeasonFromDate(string $date): string
 ------------------------------------------------- */
 $requestedSeason = $_GET['season'] ?? '';
 if (!preg_match('/^\d{4}-\d{4}$/', $requestedSeason)) {
-  header('HTTP/1.0 404 Not Found');
-  exit;
+  render_404();
 }
 
 /* -------------------------------------------------
@@ -80,8 +80,7 @@ foreach ($rows as $r) {
 
 // Unknown season — no matches exist for it
 if (!isset($seasonSet[$requestedSeason])) {
-  header('HTTP/1.0 404 Not Found');
-  exit;
+  render_404();
 }
 
 // The active season's permanent home is /matches/ — consolidate SEO value there
