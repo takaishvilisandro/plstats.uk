@@ -152,20 +152,8 @@ function hub_match_row(array $r): string
   ], $r['_played']);
 }
 
-// "Updated" (current season only): last data change for matches, as a UK date
-$hubUpdated = '';
-if ($selectedSeason === $activeSeason) {
-  try {
-    $updatedUtc = $pdo->query("SELECT UpdatedAtUtc FROM DataVersions WHERE Scope = 'matches'")->fetchColumn();
-    if ($updatedUtc) {
-      $hubUpdated = (new DateTime($updatedUtc, new DateTimeZone('UTC')))
-        ->setTimezone(new DateTimeZone('Europe/London'))
-        ->format('j M Y');
-    }
-  } catch (PDOException $e) {
-    error_log('Matches hub: data version query failed.');
-  }
-}
+// "Updated" (current season only): last data change for matches (UTC)
+$hubUpdated = $selectedSeason === $activeSeason ? plstats_data_updated($pdo, 'matches') : null;
 
 // Rounds shown before "Load earlier rounds"
 const HUB_ROUNDS_FIRST = 2;

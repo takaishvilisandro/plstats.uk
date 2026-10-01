@@ -286,6 +286,46 @@ function plstats_not_found(): void
 }
 
 /* ----------------------------------------
+   "Updated" times
+---------------------------------------- */
+
+/**
+ * When a data area last changed, in UTC, from DataVersions.UpdatedAtUtc
+ * (the one timestamp stored in true UTC; DataUpdatedAt columns are in the
+ * ingestion machine's local time, so they can't carry an offset).
+ * Scopes: site, matches, standings, players, leaderboards, records.
+ */
+function plstats_data_updated(PDO $pdo, string $scope): ?DateTimeImmutable
+{
+  static $versions = null;
+
+  if ($versions === null) {
+    $versions = [];
+    try {
+      foreach ($pdo->query("SELECT Scope, UpdatedAtUtc FROM DataVersions")->fetchAll() as $row) {
+        if ($row['UpdatedAtUtc']) {
+          $versions[$row['Scope']] = new DateTimeImmutable(substr($row['UpdatedAtUtc'], 0, 19), new DateTimeZone('UTC'));
+        }
+      }
+    } catch (PDOException $e) {
+      error_log('DataVersions query failed.');
+    }
+  }
+
+  return $versions[$scope] ?? null;
+}
+
+/**
+ * The "Updated" date as a machine-readable <time>:
+ * <time class="date_component_time" datetime="2026-09-29T08:28:34+00:00">September 29, 2026</time>
+ */
+function plstats_time_tag(DateTimeInterface $when): string
+{
+  return '<time class="date_component_time" datetime="' . $when->format('Y-m-d\TH:i:sP') . '">'
+    . $when->format('F j, Y') . '</time>';
+}
+
+/* ----------------------------------------
    Formatting
 ---------------------------------------- */
 

@@ -28,7 +28,7 @@ $statusLabels = ['upcoming' => 'Upcoming', 'in_progress' => 'In progress', 'comp
   <header class="hub_header">
     <div class="hub_title_block">
       <h1 class="hub_title"><?= htmlspecialchars($hubHeading) ?></h1>
-      <p class="updated_label num"><?= htmlspecialchars($selectedSeason) ?><?= $hubUpdated !== '' ? ' · Updated ' . htmlspecialchars($hubUpdated) : '' ?></p>
+      <p class="updated_label num"><span><?= htmlspecialchars($selectedSeason) ?><?= $hubUpdated ? ' · Updated ' . plstats_time_tag($hubUpdated) : '' ?></span></p>
     </div>
 
     <!-- Without JS: a GET form with an Apply button. With JS it submits on change. -->

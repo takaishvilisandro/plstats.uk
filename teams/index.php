@@ -17,7 +17,7 @@ $teams = $stmt->fetchAll();
 $hubSeason   = '';
 $standingsBy = [];
 $nextBy      = [];
-$hubUpdated  = '';
+$hubUpdated  = null;
 try {
   $hubSeason = plstats_current_season($pdo);
 
@@ -33,14 +33,8 @@ try {
       $standingsBy[(int)$s['TeamId']] = $s;
     }
 
-    $updatedStmt = $pdo->prepare("
-      SELECT DATE(MAX(DataUpdatedAt))
-      FROM Standings
-      WHERE Season = :season
-        AND DeleteDate IS NULL
-    ");
-    $updatedStmt->execute(['season' => $hubSeason]);
-    $hubUpdated = (string)($updatedStmt->fetchColumn() ?: '');
+    // "Updated": last change to the standings data (DataVersions, true UTC)
+    $hubUpdated = plstats_data_updated($pdo, 'standings');
   }
 
   // Upcoming fixtures, soonest first: the first one seen per club is its next match
@@ -139,11 +133,8 @@ $formClasses = ['W' => 'form_win', 'D' => 'form_draw', 'L' => 'form_loss'];
           if ($hubSeason !== '') {
             $metaParts[] = $hubSeason;
           }
-          if ($hubUpdated !== '') {
-            $metaParts[] = 'Updated ' . plstats_format_date($hubUpdated);
-          }
           ?>
-          <p class="updated_label num"><?= htmlspecialchars(implode(' · ', $metaParts)) ?></p>
+          <p class="updated_label num"><span><?= htmlspecialchars(implode(' · ', $metaParts)) ?><?php if ($hubUpdated): ?> · Updated <?= plstats_time_tag($hubUpdated) ?><?php endif; ?></span></p>
         </div>
 
         <?php if ($seasonStarted && count($teams) > 1): ?>

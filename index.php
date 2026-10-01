@@ -18,18 +18,8 @@ $seasonStartYear = $homeSeason !== '' ? (int)substr($homeSeason, 0, 4) : 0;
 $seasonStart     = $seasonStartYear ? "$seasonStartYear-08-01 00:00:00" : '';
 $seasonEnd       = $seasonStartYear ? ($seasonStartYear + 1) . '-08-01 00:00:00' : '';
 
-// Last data refresh (DataVersions is the one UTC timestamp), shown as a UK date
-$updatedLabel = '';
-try {
-  $updatedUtc = $pdo->query("SELECT UpdatedAtUtc FROM DataVersions WHERE Scope = 'site'")->fetchColumn();
-  if ($updatedUtc) {
-    $updatedLabel = (new DateTime($updatedUtc, new DateTimeZone('UTC')))
-      ->setTimezone(new DateTimeZone('Europe/London'))
-      ->format('j M Y');
-  }
-} catch (PDOException $e) {
-  error_log('Homepage: data version query failed.');
-}
+// Last data refresh of the whole site (DataVersions, true UTC)
+$homeUpdated = plstats_data_updated($pdo, 'site');
 
 /* Latest round results (latest round with match details in the current season) */
 $resultsRound = 0;
@@ -340,18 +330,13 @@ if ($homeSeason !== '') {
 
       <!-- INTRO -->
       <header class="home_intro">
-        <?php if ($resultsRound > 0 || $updatedLabel !== ''): ?>
+        <?php if ($resultsRound > 0 || $homeUpdated): ?>
           <p class="updated_label num">
-            <?php
-            $_introParts = [];
-            if ($resultsRound > 0) {
-              $_introParts[] = 'Round ' . $resultsRound . ($roundComplete ? ' complete' : '');
-            }
-            if ($updatedLabel !== '') {
-              $_introParts[] = 'Updated ' . $updatedLabel;
-            }
-            echo htmlspecialchars(implode(' · ', $_introParts));
-            ?>
+            <span>
+              <?php if ($resultsRound > 0): ?>Round <?= (int)$resultsRound ?><?= $roundComplete ? ' complete' : '' ?><?php endif; ?>
+              <?php if ($resultsRound > 0 && $homeUpdated): ?> · <?php endif; ?>
+              <?php if ($homeUpdated): ?>Updated <?= plstats_time_tag($homeUpdated) ?><?php endif; ?>
+            </span>
           </p>
         <?php endif; ?>
         <h1 class="home_title">Premier League Stats, Match Commentary & Lineups</h1>

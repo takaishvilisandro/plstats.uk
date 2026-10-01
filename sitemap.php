@@ -205,6 +205,80 @@ try {
 }
 
 /* ----------------------------------------
+   3c. LEAGUE TABLE: /table/ (current season) and
+   /table/{season}/ for every other season.
+   lastmod = when that season's table last changed.
+---------------------------------------- */
+try {
+  $tableSeasons = $pdo->query("
+    SELECT se.Label, se.Status, DATE(MAX(st.DataUpdatedAt)) AS Updated
+    FROM Seasons se
+    JOIN Standings st ON st.Season = se.Label AND st.DeleteDate IS NULL
+    WHERE se.DeleteDate IS NULL
+    GROUP BY se.Label, se.Status
+    ORDER BY se.Label DESC
+  ")->fetchAll();
+
+  foreach ($tableSeasons as $s) {
+    // The current season lives at /table/ (its /table/{season}/ URL redirects there)
+    $isCurrent = ($s['Status'] === 'InProgress');
+    $tableUrl  = $baseUrl . ($isCurrent ? '/table/' : '/table/' . $s['Label'] . '/');
+
+    echo "  <url>\n";
+    echo "    <loc>" . escapeXml($tableUrl) . "</loc>\n";
+    echo "    <lastmod>" . escapeXml($s['Updated']) . "</lastmod>\n";
+    echo "    <changefreq>" . ($isCurrent ? 'daily' : 'yearly') . "</changefreq>\n";
+    echo "    <priority>" . ($isCurrent ? '0.9' : '0.5') . "</priority>\n";
+    echo "  </url>\n";
+  }
+} catch (Exception $e) {
+  // Silent fail - continue with other URLs
+}
+
+/* ----------------------------------------
+   3d. PLAYERS: /players/ and every player
+   profile meant to be indexed (IndexState
+   = 'Complete'; the others are noindex).
+   lastmod = Players.DataUpdatedAt.
+---------------------------------------- */
+try {
+  $playersUpdated = $pdo->query("
+    SELECT DATE(MAX(DataUpdatedAt))
+    FROM Players
+    WHERE DeleteDate IS NULL
+  ")->fetchColumn();
+
+  if ($playersUpdated) {
+    echo "  <url>\n";
+    echo "    <loc>" . escapeXml($baseUrl . '/players/') . "</loc>\n";
+    echo "    <lastmod>" . escapeXml($playersUpdated) . "</lastmod>\n";
+    echo "    <changefreq>daily</changefreq>\n";
+    echo "    <priority>0.8</priority>\n";
+    echo "  </url>\n";
+  }
+
+  $playersStmt = $pdo->query("
+    SELECT Slug, DATE(DataUpdatedAt) AS Updated
+    FROM Players
+    WHERE IndexState = 'Complete'
+      AND Slug IS NOT NULL
+      AND DeleteDate IS NULL
+    ORDER BY Slug
+  ");
+
+  while ($p = $playersStmt->fetch()) {
+    echo "  <url>\n";
+    echo "    <loc>" . escapeXml($baseUrl . '/players/' . $p['Slug'] . '/') . "</loc>\n";
+    echo "    <lastmod>" . escapeXml($p['Updated']) . "</lastmod>\n";
+    echo "    <changefreq>weekly</changefreq>\n";
+    echo "    <priority>0.7</priority>\n";
+    echo "  </url>\n";
+  }
+} catch (Exception $e) {
+  // Silent fail - continue with other URLs
+}
+
+/* ----------------------------------------
    4. NEWS PAGES (if you have news table)
 ---------------------------------------- */
 try {

@@ -375,7 +375,8 @@ $age       = plstats_age($player['DateOfBirth']);
 $position  = $player['DetailedPosition'] ?: $player['Position'];
 $teamUrl   = $player['TeamSlug'] ? plstats_team_url($player['TeamSlug']) : '';
 $teamLogo  = $player['TeamSlug'] ? plstats_team_logo($pdo, $player['TeamLogo'], $player['TeamSlug']) : null;
-$updatedAt = substr((string)$player['DataUpdatedAt'], 0, 10);
+// "Updated": last change to the player data (DataVersions, true UTC)
+$updatedAt = plstats_data_updated($pdo, 'players');
 
 /* -------------------------------------------------
    SEO metadata
@@ -536,7 +537,7 @@ if ($player['TeamName']) {
 
         <?php if ($updatedAt): ?>
           <p class="entity_updated updated_label num">
-            <span><?php if ($displaySeason !== ''): ?><span class="entity_updated_season">Premier League <?= htmlspecialchars($displaySeason) ?> · </span><?php endif; ?>Updated <?= plstats_format_date($updatedAt) ?></span>
+            <span><?php if ($displaySeason !== ''): ?><span class="entity_updated_season">Premier League <?= htmlspecialchars($displaySeason) ?> · </span><?php endif; ?>Updated <?= plstats_time_tag($updatedAt) ?></span>
           </p>
         <?php endif; ?>
       </section>

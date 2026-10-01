@@ -40,11 +40,8 @@ if (!$players) {
   render_404();
 }
 
-$updatedAt = $pdo->query("
-  SELECT DATE(MAX(DataUpdatedAt))
-  FROM Players
-  WHERE DeleteDate IS NULL
-")->fetchColumn() ?: null;
+// "Updated": last change to the player data (DataVersions, true UTC)
+$updatedAt = plstats_data_updated($pdo, 'players');
 
 /* -------------------------------------------------
    Group by club
@@ -213,7 +210,7 @@ $breadcrumbs = [
 
       <header class="players_dir_header">
         <h1 class="players_dir_title"><span class="entity_name">Premier League Players</span><?php if ($season !== ''): ?> <span class="entity_season num"><?= htmlspecialchars($season) ?></span><?php endif; ?></h1>
-        <p class="updated_label num"><?= count($players) ?> players · <?= count($squads) ?> clubs<?= $updatedAt ? ' · Updated ' . plstats_format_date($updatedAt) : '' ?></p>
+        <p class="updated_label num"><span><?= count($players) ?> players · <?= count($squads) ?> clubs<?= $updatedAt ? ' · Updated ' . plstats_time_tag($updatedAt) : '' ?></span></p>
       </header>
 
       <div class="players_layout">

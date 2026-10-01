@@ -80,14 +80,8 @@ if (!$rows) {
   render_404();
 }
 
-$updatedStmt = $pdo->prepare("
-  SELECT DATE(MAX(DataUpdatedAt))
-  FROM Standings
-  WHERE Season = :season
-    AND DeleteDate IS NULL
-");
-$updatedStmt->execute(['season' => $season]);
-$updatedAt = $updatedStmt->fetchColumn() ?: null;
+// "Updated": last change to the standings data (DataVersions, true UTC)
+$updatedAt = plstats_data_updated($pdo, 'standings');
 
 /* -------------------------------------------------
    Build the three views (overall / home / away)
@@ -279,17 +273,8 @@ if ($isArchive) {
 
           <p class="table_meta">
             <?php if (!$isArchive): ?>
-              <?php
-              $metaParts = [];
-              if ($afterRound > 0) {
-                $metaParts[] = 'After Round ' . $afterRound;
-              }
-              if ($updatedAt) {
-                $metaParts[] = 'Updated ' . plstats_format_date($updatedAt);
-              }
-              ?>
-              <?php if ($metaParts): ?>
-                <span class="updated_label num"><?= htmlspecialchars(implode(' · ', $metaParts)) ?></span>
+              <?php if ($afterRound > 0 || $updatedAt): ?>
+                <span class="updated_label num"><span><?php if ($afterRound > 0): ?>After Round <?= (int)$afterRound ?><?php endif; ?><?php if ($afterRound > 0 && $updatedAt): ?> · <?php endif; ?><?php if ($updatedAt): ?>Updated <?= plstats_time_tag($updatedAt) ?><?php endif; ?></span></span>
               <?php endif; ?>
               <a class="table_meta_link" href="<?= htmlspecialchars($resultsUrl) ?>"><span class="label_mobile">Results</span><span class="label_desktop">Fixtures &amp; results</span> <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
             <?php else: ?>

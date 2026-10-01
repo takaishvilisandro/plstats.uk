@@ -136,14 +136,8 @@ try {
       $miniStmt->execute(['season' => $currentSeason, 'from_pos' => $start, 'to_pos' => $start + 3]);
       $miniTable = $miniStmt->fetchAll();
 
-      $updatedStmt = $pdo->prepare("
-        SELECT DATE(MAX(DataUpdatedAt))
-        FROM Standings
-        WHERE Season = :season
-          AND DeleteDate IS NULL
-      ");
-      $updatedStmt->execute(['season' => $currentSeason]);
-      $updatedAt = $updatedStmt->fetchColumn() ?: null;
+      // "Updated": last change to the standings data (DataVersions, true UTC)
+      $updatedAt = plstats_data_updated($pdo, 'standings');
     }
   }
 } catch (PDOException $e) {
@@ -362,7 +356,7 @@ $canonicalUrl = plstats_url('/teams/' . $teamSlug . '/');
           <?php if ($updatedAt || $form): ?>
             <div class="team_header_footer">
               <?php if ($updatedAt): ?>
-                <p class="updated_label num">Updated <?= plstats_format_date($updatedAt) ?></p>
+                <p class="updated_label num"><span>Updated <?= plstats_time_tag($updatedAt) ?></span></p>
               <?php endif; ?>
               <?php if ($form): ?>
                 <div class="team_form team_form--mobile" aria-label="Form, oldest to newest: <?= implode(' ', $form) ?>">
