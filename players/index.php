@@ -186,11 +186,7 @@ $breadcrumbs = [
     array_merge(
       plstats_schema_collection_page($canonicalUrl, $pageHeading, $pageDesc, $breadcrumbId),
       [
-        'about' => [
-          '@type' => 'SportsOrganization',
-          'name'  => 'Premier League',
-          'sport' => 'Association Football',
-        ],
+        'about' => plstats_schema_premier_league(),
       ]
     ),
   ]);

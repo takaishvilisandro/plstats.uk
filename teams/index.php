@@ -1,6 +1,7 @@
 <?php
 require '../includes/functions/db.php';
 require '../includes/functions/helpers.php';
+require '../includes/schema-markups/schema-helpers.php';
 
 $stmt = $pdo->query("
     SELECT Id, Name, Slug, Logo
@@ -89,8 +90,8 @@ $formClasses = ['W' => 'form_win', 'D' => 'form_draw', 'L' => 'form_loss'];
   <title>Premier League Teams – PLStats.uk</title>
   <meta name="description" content="Explore all Premier League teams with quick stats, upcoming matches, and club profiles.">
 
-  <!-- TEMP: Block all bots -->
-  <meta name="canonical" content="<?= htmlspecialchars(plstats_url('/teams/')) ?>" />
+  <!-- Canonical -->
+  <link rel="canonical" href="<?= htmlspecialchars(plstats_url('/teams/')) ?>" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -241,31 +242,42 @@ $formClasses = ['W' => 'form_win', 'D' => 'form_draw', 'L' => 'form_loss'];
 
   <?php include '../includes/blocks/footer.php'; ?>
 
-  <!-- ================================
-     Schema: CollectionPage + Teams
-================================ -->
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "CollectionPage",
-      "name": "Premier League Teams",
-      "description": "Complete list of Premier League football teams with stats and profiles.",
-      "url": <?= json_encode(plstats_url('/teams/')) ?>,
-      "mainEntity": {
-        "@type": "ItemList",
-        "itemListElement": [
-          <?php foreach ($teams as $i => $team): ?> {
-              "@type": "SportsTeam",
-              "name": <?= json_encode($team['Name']) ?>,
-              "sport": "Football",
-              "url": <?= json_encode(plstats_url('/teams/' . $team['Slug'])) ?>
-            }
-            <?= $i < count($teams) - 1 ? ',' : '' ?>
-          <?php endforeach; ?>
-        ]
-      }
-    }
-  </script>
+  <?php
+  // Schema: CollectionPage + the clubs in page order (A–Z)
+  $teamsUrl     = plstats_url('/teams/');
+  $teamsListEls = [];
+  foreach ($teams as $i => $team) {
+    $teamsListEls[] = [
+      '@type'    => 'ListItem',
+      'position' => $i + 1,
+      'item'     => plstats_schema_team_ref($team['Name'], $team['Slug']),
+    ];
+  }
+  plstats_output_schema([
+    plstats_schema_organization(),
+    plstats_schema_website(),
+    plstats_schema_breadcrumb($teamsUrl . '#breadcrumb', [
+      ['name' => 'Home', 'url' => PLSTATS_BASE . '/'],
+      ['name' => 'Teams'],
+    ]),
+    array_merge(
+      plstats_schema_collection_page(
+        $teamsUrl,
+        'Premier League Teams',
+        'Complete list of Premier League football teams with stats and profiles.',
+        $teamsUrl . '#breadcrumb'
+      ),
+      [
+        'about'      => plstats_schema_premier_league(),
+        'mainEntity' => [
+          '@type'           => 'ItemList',
+          'numberOfItems'   => count($teamsListEls),
+          'itemListElement' => $teamsListEls,
+        ],
+      ]
+    ),
+  ]);
+  ?>
 
 </body>
 

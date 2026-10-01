@@ -1,6 +1,7 @@
 <?php
 include "includes/functions/db.php";
 require_once "includes/functions/helpers.php";
+require_once "includes/schema-markups/schema-helpers.php";
 
 /* ----------------------------------------
    Homepage modules. Each one is loaded on its
@@ -212,109 +213,25 @@ if ($homeSeason !== '') {
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 
   <!-- Schema.org Structured Data -->
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [{
-          "@type": "WebSite",
-          "@id": "<?= SITE_URL ?>/#website",
-          "url": "<?= SITE_URL ?>/",
-          "name": "PLStats.uk",
-          "description": "Premier League statistics, match commentary, lineups, and tactical analysis",
-          "publisher": {
-            "@id": "<?= SITE_URL ?>/#organization"
-          },
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": {
-              "@type": "EntryPoint",
-              "urlTemplate": "<?= SITE_URL ?>/matches/?q={search_term_string}"
-            },
-            "query-input": "required name=search_term_string"
-          },
-          "inLanguage": "en-GB"
-        },
-        {
-          "@type": "Organization",
-          "@id": "<?= SITE_URL ?>/#organization",
-          "name": "PLStats.uk",
-          "url": "<?= SITE_URL ?>/",
-          "logo": {
-            "@type": "ImageObject",
-            "@id": "<?= SITE_URL ?>/#logo",
-            "url": "<?= SITE_URL ?>/includes/images/plstats-logo-colorful.png",
-            "contentUrl": "<?= SITE_URL ?>/includes/images/plstats-logo-colorful.png",
-            "width": 512,
-            "height": 512,
-            "caption": "PLStats.uk Logo"
-          },
-          "image": {
-            "@id": "<?= SITE_URL ?>/#logo"
-          },
-          "sameAs": [
-            "https://twitter.com/plstats_uk"
-          ],
-          "description": "PLStats.uk provides in-depth Premier League statistics, expert match commentary, verified lineups, and tactical analysis for football fans."
-        },
-        {
-          "@type": "WebPage",
-          "@id": "<?= SITE_URL ?>/#webpage",
-          "url": "<?= SITE_URL ?>/",
-          "name": "plstats | Premier League Stats, Match Commentary & Lineups (2026)",
-          "isPartOf": {
-            "@id": "<?= SITE_URL ?>/#website"
-          },
-          "about": {
-            "@id": "<?= SITE_URL ?>/#organization"
-          },
-          "primaryImageOfPage": {
-            "@type": "ImageObject",
-            "@id": "<?= SITE_URL ?>/#primaryimage",
-            "url": "<?= SITE_URL ?>/includes/images/premier-league-stats-analysis-plstats-uk.webp",
-            "contentUrl": "<?= SITE_URL ?>/includes/images/premier-league-stats-analysis-plstats-uk.webp",
-            "width": 1200,
-            "height": 630,
-            "caption": "Premier League Stats & Analysis - PLStats.uk"
-          },
-          "description": "plstats provides in-depth Premier League statistics, expert match commentary, verified lineups, tactical insights, and team performance analysis. Updated weekly with accurate football data.",
-          "breadcrumb": {
-            "@id": "<?= SITE_URL ?>/#breadcrumb"
-          },
-          "inLanguage": "en-GB",
-          "potentialAction": {
-            "@type": "ReadAction",
-            "target": ["<?= SITE_URL ?>/"]
-          }
-        },
-        {
-          "@type": "BreadcrumbList",
-          "@id": "<?= SITE_URL ?>/#breadcrumb",
-          "itemListElement": [{
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "<?= SITE_URL ?>/"
-          }]
-        },
-        {
-          "@type": "CollectionPage",
-          "@id": "<?= SITE_URL ?>/#collection",
-          "url": "<?= SITE_URL ?>/",
-          "name": "Premier League Match Coverage & Statistics",
-          "description": "Complete Premier League match coverage including statistics, commentary, lineups, and tactical analysis",
-          "isPartOf": {
-            "@id": "<?= SITE_URL ?>/#website"
-          },
-          "about": {
-            "@type": "SportsOrganization",
-            "name": "Premier League",
-            "sport": "Association Football"
-          },
-          "inLanguage": "en-GB"
-        }
-      ]
-    }
-  </script>
+  <?php
+  // One WebPage for the homepage (no separate CollectionPage for the same URL)
+  plstats_output_schema([
+    plstats_schema_organization(),
+    plstats_schema_website(),
+    plstats_schema_breadcrumb(SITE_URL . '/#breadcrumb', [
+      ['name' => 'Home', 'url' => SITE_URL . '/'],
+    ]),
+    array_merge(
+      plstats_schema_webpage(
+        SITE_URL . '/',
+        'plstats | Premier League Stats, Match Commentary & Lineups (2026)',
+        'plstats provides in-depth Premier League statistics, expert match commentary, verified lineups, tactical insights, and team performance analysis. Updated weekly with accurate football data.',
+        SITE_URL . '/#breadcrumb'
+      ),
+      ['about' => plstats_schema_premier_league()]
+    ),
+  ]);
+  ?>
 
 </head>
 

@@ -131,7 +131,7 @@ if ($currentPath !== $canonicalPath) {
 ---------------------------------------- */
 $matchId = $match['Id'];
 $reviewStmt = $pdo->prepare("
-  SELECT ReviewHtml
+  SELECT ReviewHtml, CreateDate, UpdateDate
   FROM MatchReviews
   WHERE MatchId = :match_id
     AND DeleteDate IS NULL
@@ -326,10 +326,12 @@ $matchDesc    = "Read the overview of $home vs $away in the Premier League $matc
 $graph = [
   plstats_schema_organization(),
   plstats_schema_website(),
-  plstats_schema_author_person(),
+  plstats_schema_author_team(),
+  // Same trail as the visible breadcrumb (Matches › Season › match), from Home
   plstats_schema_breadcrumb($breadcrumbId, [
-    ['name' => 'Home',    'url'  => PLSTATS_BASE . '/'],
-    ['name' => 'Matches', 'url'  => PLSTATS_BASE . '/matches/'],
+    ['name' => 'Home',       'url' => PLSTATS_BASE . '/'],
+    ['name' => 'Matches',    'url' => PLSTATS_BASE . '/matches/'],
+    ['name' => $matchSeason, 'url' => plstats_url("/matches/$matchSeason/")],
     ['name' => "$home vs $away"],
   ]),
   plstats_schema_sports_event([
@@ -340,23 +342,33 @@ $graph = [
     'awaySlug'  => $match['AwayTeamSlug'],
     'homeImage' => PLSTATS_BASE . '/' . $match['HomeTeamLogo'],
     'stadium'   => $match['HomeTeamStadium'] ?? '',
-    'startDate' => date('c', strtotime($match['Date'])),
+    'date'      => $match['Date'],
     'played'    => $played,
     'scoreHome' => $match['HomeTeamScore'],
     'scoreAway' => $match['AwayTeamScore'],
   ]),
 ];
 
-// Add Article node if a review exists
+// Add Article node if a review exists. Dates are the review's own, date only:
+// CreateDate/UpdateDate are not stored in a known timezone.
 if ($review) {
-  $graph[] = plstats_schema_article([
-    'url'           => $canonicalUrl,
-    'headline'      => $matchTitle,
-    'description'   => $matchDesc,
-    'datePublished' => date('c', strtotime($match['Date'])),
-    'dateModified'  => date('c', strtotime($match['Date'])),
-    'image'         => PLSTATS_BASE . '/' . $match['HomeTeamLogo'],
-  ]);
+  $reviewPublished = $review['CreateDate'] ? date('Y-m-d', strtotime($review['CreateDate'])) : '';
+  $reviewModified  = $review['UpdateDate'] ? date('Y-m-d', strtotime($review['UpdateDate'])) : $reviewPublished;
+  $reviewHeadline  = ($played && $match['HomeTeamScore'] !== null && $match['AwayTeamScore'] !== null)
+    ? "$home " . (int)$match['HomeTeamScore'] . '–' . (int)$match['AwayTeamScore'] . " $away: $matchSeason Premier League Match Review"
+    : "$home vs $away: $matchSeason Premier League Match Review";
+
+  if ($reviewPublished !== '') {
+    $graph[] = plstats_schema_article([
+      'url'           => $canonicalUrl,
+      'headline'      => $reviewHeadline,
+      'description'   => $matchDesc,
+      'datePublished' => $reviewPublished,
+      'dateModified'  => $reviewModified,
+      'image'         => PLSTATS_BASE . '/' . $match['HomeTeamLogo'],
+      'about'         => $canonicalUrl . '#sportsevent',
+    ]);
+  }
 }
 ?>
 <!DOCTYPE html>

@@ -83,6 +83,16 @@ if (!defined('PLSTATS_CONTACT_EMAIL')) {
   define('PLSTATS_CONTACT_EMAIL', filter_var($contactEmail, FILTER_VALIDATE_EMAIL) ? $contactEmail : '');
 }
 
+// Optional official social profiles (app.config.php SOCIAL_PROFILES), used as the
+// Organization's schema sameAs. Only valid https URLs; [] = no sameAs printed.
+if (!defined('PLSTATS_SAME_AS')) {
+  $socialProfiles = is_array($appConfig['SOCIAL_PROFILES'] ?? null) ? $appConfig['SOCIAL_PROFILES'] : [];
+  define('PLSTATS_SAME_AS', array_values(array_filter(
+    array_map(fn($u) => trim((string)$u), $socialProfiles),
+    fn($u) => filter_var($u, FILTER_VALIDATE_URL) && str_starts_with($u, 'https://')
+  )));
+}
+
 if (!function_exists('plstats_url')) {
   /**
    * Build an absolute first-party URL from SITE_URL + path.

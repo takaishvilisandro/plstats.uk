@@ -298,9 +298,28 @@ $canonicalUrl = plstats_url('/teams/' . $teamSlug . '/');
   <meta name="twitter:image" content="<?= htmlspecialchars(plstats_url('/' . ltrim($team['Logo'], '/'))) ?>">
 
   <?php
-  // Added with the visible breadcrumb (the page had no structured data before)
+  // Only what the page shows: no crest, stadium or year for placeholder rows
   plstats_output_schema([
+    plstats_schema_organization(),
+    plstats_schema_website(),
     plstats_schema_breadcrumb($canonicalUrl . '#breadcrumb', $breadcrumbs),
+    array_merge(
+      plstats_schema_webpage(
+        $canonicalUrl,
+        $team['Name'] . ' – Team Profile',
+        'See ' . $team['Name'] . ' fixtures, form, and stats – powered by PLStats.uk.',
+        $canonicalUrl . '#breadcrumb'
+      ),
+      ['about' => ['@id' => $canonicalUrl . '#sportsteam']]
+    ),
+    plstats_schema_sports_team([
+      'slug'     => $team['Slug'],
+      'name'     => $team['Name'],
+      'logo'     => plstats_team_logo($pdo, $team['Logo'], $team['Slug']),
+      'founded'  => $teamFounded,
+      'stadium'  => $teamStadium,
+      'inLeague' => (int)$team['IsActive'] === 1,
+    ]),
   ]);
   ?>
 </head>

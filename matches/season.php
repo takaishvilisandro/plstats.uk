@@ -161,11 +161,7 @@ $pageDesc     = "Full Premier League $selectedSeason season archive: every fixtu
         $breadcrumbId
       ),
       [
-        'about' => [
-          '@type' => 'SportsOrganization',
-          'name'  => 'Premier League',
-          'sport' => 'Association Football',
-        ],
+        'about' => plstats_schema_premier_league(),
       ]
     ),
   ]);

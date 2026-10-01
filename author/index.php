@@ -9,31 +9,25 @@ $breadcrumbId = $authorUrl . '#breadcrumb';
 $graph = [
   plstats_schema_organization(),
   plstats_schema_website(),
+  // Same trail as the visible breadcrumb (Home › About)
   plstats_schema_breadcrumb($breadcrumbId, [
-    ['name' => 'Home',   'url' => PLSTATS_BASE . '/'],
-    ['name' => 'Author'],
+    ['name' => 'Home',  'url' => PLSTATS_BASE . '/'],
+    ['name' => 'About'],
   ]),
-  plstats_schema_person([
-    'url'         => $authorUrl,
-    'name'        => $authorName,
-    'jobTitle'    => 'Football Data Analyst & Sports Writer',
-    'description' => 'The PLStats editorial team produces data-driven Premier League match analysis, tactical breakdowns, verified lineups, and structured match statistics.',
-    'knowsAbout'  => [
-      'Premier League',
-      'Football Statistics',
-      'Match Analysis',
-      'Tactical Analysis',
-      'Sports Data Journalism',
-    ],
-    'sameAs' => [
-      'https://twitter.com/plstats_uk',
-    ],
-  ]),
-  plstats_schema_webpage(
-    $authorUrl,
-    'About the Author – ' . PLSTATS_NAME,
-    'Learn about the PLStats editorial team: data analysts and football writers who produce structured Premier League match analysis, verified statistics, and tactical commentary.',
-    $breadcrumbId
+  plstats_schema_author_team(
+    'The PLStats editorial team produces data-driven Premier League match analysis, tactical breakdowns, verified lineups, and structured match statistics.'
+  ),
+  array_merge(
+    plstats_schema_webpage(
+      $authorUrl,
+      'About the Author – ' . PLSTATS_NAME,
+      'Learn about the PLStats editorial team: data analysts and football writers who produce structured Premier League match analysis, verified statistics, and tactical commentary.',
+      $breadcrumbId
+    ),
+    [
+      '@type' => 'AboutPage',
+      'about' => ['@id' => PLSTATS_AUTHOR_ID],
+    ]
   ),
 ];
 

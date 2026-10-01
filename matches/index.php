@@ -136,11 +136,7 @@ $hubHeading = 'Premier League Matches';
         plstats_url('/matches/#breadcrumb')
       ),
       [
-        'about' => [
-          '@type' => 'SportsOrganization',
-          'name'  => 'Premier League',
-          'sport' => 'Association Football',
-        ],
+        'about' => plstats_schema_premier_league(),
       ]
     ),
   ]);

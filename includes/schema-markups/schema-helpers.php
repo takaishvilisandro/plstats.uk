@@ -27,10 +27,11 @@ if (!defined('SITE_URL')) {
 
 /**
  * Organization node — identical across every page.
+ * sameAs comes from app.config.php SOCIAL_PROFILES (official accounts only).
  */
 function plstats_schema_organization(): array
 {
-    return [
+    $node = [
         '@type'       => 'Organization',
         '@id'         => PLSTATS_BASE . '/#organization',
         'name'        => PLSTATS_NAME,
@@ -46,52 +47,91 @@ function plstats_schema_organization(): array
         ],
         'image'       => ['@id' => PLSTATS_BASE . '/#logo'],
         'description' => 'PLStats.uk provides in-depth Premier League statistics, expert match commentary, verified lineups, and tactical analysis for football fans.',
-        'sameAs'      => [
-            'https://twitter.com/plstatsuk',
-            'https://facebook.com/plstatsuk',
-        ],
     ];
+    if (PLSTATS_SAME_AS) {
+        $node['sameAs'] = PLSTATS_SAME_AS;
+    }
+    return $node;
 }
 
 /**
  * WebSite node — identical across every page.
+ * (No SearchAction: the site has no search results page.)
  */
 function plstats_schema_website(): array
 {
     return [
-        '@type'           => 'WebSite',
-        '@id'             => PLSTATS_BASE . '/#website',
-        'url'             => PLSTATS_BASE . '/',
-        'name'            => PLSTATS_NAME,
-        'description'     => 'Premier League statistics, match commentary, lineups, and tactical analysis',
-        'publisher'       => ['@id' => PLSTATS_BASE . '/#organization'],
-        'potentialAction' => [
-            '@type'       => 'SearchAction',
-            'target'      => [
-                '@type'       => 'EntryPoint',
-                'urlTemplate' => PLSTATS_BASE . '/matches/?q={search_term_string}',
-            ],
-            'query-input' => 'required name=search_term_string',
-        ],
-        'inLanguage' => 'en-GB',
+        '@type'       => 'WebSite',
+        '@id'         => PLSTATS_BASE . '/#website',
+        'url'         => PLSTATS_BASE . '/',
+        'name'        => PLSTATS_NAME,
+        'description' => 'Premier League statistics, match commentary, lineups, and tactical analysis',
+        'publisher'   => ['@id' => PLSTATS_BASE . '/#organization'],
+        'inLanguage'  => 'en-GB',
     ];
 }
 
 /**
- * Person node for the editorial author — referenced by Article nodes.
+ * The editorial team behind the match reviews — an Organization (a team is
+ * not a Person), part of the site's Organization. Referenced by Article nodes
+ * through PLSTATS_AUTHOR_ID.
+ *
+ * @param string $description  Optional override (the About page's own wording)
  */
-function plstats_schema_author_person(): array
+function plstats_schema_author_team(string $description = ''): array
 {
     return [
-        '@type'       => 'Person',
-        '@id'         => PLSTATS_AUTHOR_ID,
-        'name'        => PLSTATS_AUTHOR_NAME,
-        'url'         => PLSTATS_AUTHOR_URL,
-        'jobTitle'    => 'Football Data Analyst & Sports Writer',
-        'worksFor'    => ['@id' => PLSTATS_BASE . '/#organization'],
-        'description' => 'The PLStats editorial team produces data-driven Premier League match analysis, tactical breakdowns, and verified match statistics.',
-        'knowsAbout'  => ['Premier League', 'Football Statistics', 'Match Analysis', 'Tactical Analysis'],
+        '@type'              => 'Organization',
+        '@id'                => PLSTATS_AUTHOR_ID,
+        'name'               => PLSTATS_AUTHOR_NAME,
+        'url'                => PLSTATS_AUTHOR_URL,
+        'parentOrganization' => ['@id' => PLSTATS_BASE . '/#organization'],
+        'description'        => $description !== ''
+            ? $description
+            : 'The PLStats editorial team produces data-driven Premier League match analysis, tactical breakdowns, and verified match statistics.',
+        'knowsAbout'         => ['Premier League', 'Football Statistics', 'Match Analysis', 'Tactical Analysis'],
     ];
+}
+
+/**
+ * The Premier League — one entity with one @id, reused by every page
+ * (about, organizer, memberOf).
+ */
+function plstats_schema_premier_league(): array
+{
+    return [
+        '@type' => 'SportsOrganization',
+        '@id'   => PLSTATS_BASE . '/#premier-league',
+        'name'  => 'Premier League',
+        'sport' => 'Association Football',
+        'url'   => 'https://www.premierleague.com',
+    ];
+}
+
+/**
+ * Short SportsTeam reference with the same @id as the team page's node.
+ */
+function plstats_schema_team_ref(string $name, string $slug): array
+{
+    return [
+        '@type' => 'SportsTeam',
+        '@id'   => PLSTATS_BASE . '/teams/' . $slug . '/#sportsteam',
+        'name'  => $name,
+        'url'   => PLSTATS_BASE . '/teams/' . $slug . '/',
+    ];
+}
+
+/**
+ * ISO 8601 for a Matches.Date value. Matches.Date is UK wall-clock time, so it
+ * is read in Europe/London (GMT/BST) rather than the server's own timezone.
+ */
+function plstats_schema_uk_datetime(string $ukDateTime, int $addSeconds = 0): string
+{
+    $dt = new DateTimeImmutable($ukDateTime, new DateTimeZone('Europe/London'));
+    if ($addSeconds !== 0) {
+        $dt = $dt->modify(($addSeconds > 0 ? '+' : '') . $addSeconds . ' seconds');
+    }
+    return $dt->format('c');
 }
 
 // ── Page-level helpers ────────────────────────────────────────────────────────
@@ -179,9 +219,10 @@ function plstats_schema_collection_page(
  *   url:           string   Canonical page URL
  *   headline:      string   Article title (≤110 chars recommended)
  *   description:   string   Short excerpt / meta description
- *   datePublished: string   ISO 8601 (e.g. '2025-05-28T00:00:00+00:00')
+ *   datePublished: string   ISO 8601 (e.g. '2025-05-28T00:00:00+00:00' or '2025-05-28')
  *   dateModified:  string   ISO 8601 (defaults to datePublished)
  *   image?: string   Absolute image URL
+ *   about?: string   @id of the entity the article is about
  * }
  */
 function plstats_schema_article(array $data): array
@@ -190,6 +231,7 @@ function plstats_schema_article(array $data): array
         '@type'         => 'Article',
         '@id'           => $data['url'] . '#article',
         'url'           => $data['url'],
+        'mainEntityOfPage' => $data['url'],
         'headline'      => $data['headline'],
         'description'   => $data['description'],
         'datePublished' => $data['datePublished'],
@@ -199,6 +241,9 @@ function plstats_schema_article(array $data): array
         'isPartOf'      => ['@id' => PLSTATS_BASE . '/#website'],
         'inLanguage'    => 'en-GB',
     ];
+    if (!empty($data['about'])) {
+        $node['about'] = ['@id' => $data['about']];
+    }
     if (!empty($data['image'])) {
         $node['image'] = [
             '@type'      => 'ImageObject',
@@ -220,7 +265,7 @@ function plstats_schema_article(array $data): array
  *   awaySlug:  string
  *   homeImage: string   Absolute URL to home team logo
  *   stadium:   string
- *   startDate: string   ISO 8601
+ *   date:      string   Matches.Date (UK wall-clock time)
  *   played:    bool
  *   scoreHome?: int|null
  *   scoreAway?: int|null
@@ -241,54 +286,37 @@ function plstats_schema_sports_event(array $data): array
             . ' – Premier League result, match commentary, and analysis from PLStats.uk.';
     }
 
-    return [
+    $homeTeam = plstats_schema_team_ref($data['homeName'], $data['homeSlug']);
+    $awayTeam = plstats_schema_team_ref($data['awayName'], $data['awaySlug']);
+
+    $node = [
         '@type'               => 'SportsEvent',
         '@id'                 => $data['url'] . '#sportsevent',
         'name'                => $data['homeName'] . ' vs ' . $data['awayName'],
         'description'         => $description,
         'url'                 => $data['url'],
-        'startDate'           => $data['startDate'],
-        'endDate'             => date('c', strtotime($data['startDate']) + 7200),
-        'sport'               => 'Football',
+        'startDate'           => plstats_schema_uk_datetime($data['date']),
+        'endDate'             => plstats_schema_uk_datetime($data['date'], 7200),
+        'sport'               => 'Association Football',
         'eventStatus'         => $eventStatus,
         'eventAttendanceMode' => 'https://schema.org/OfflineEventAttendanceMode',
-        'location'            => [
+        'organizer'           => plstats_schema_premier_league(),
+        'homeTeam'            => $homeTeam,
+        'awayTeam'            => $awayTeam,
+        'competitor'          => [$homeTeam, $awayTeam],
+        'image'               => $data['homeImage'],
+    ];
+    if (!empty($data['stadium'])) {
+        $node['location'] = [
             '@type'   => 'Place',
             'name'    => $data['stadium'],
             'address' => [
                 '@type'          => 'PostalAddress',
                 'addressCountry' => 'GB',
             ],
-        ],
-        'organizer'  => [
-            '@type' => 'SportsOrganization',
-            'name'  => 'Premier League',
-            'url'   => 'https://www.premierleague.com',
-        ],
-        'homeTeam'   => [
-            '@type' => 'SportsTeam',
-            'name'  => $data['homeName'],
-            'url'   => PLSTATS_BASE . '/teams/' . $data['homeSlug'] . '/',
-        ],
-        'awayTeam'   => [
-            '@type' => 'SportsTeam',
-            'name'  => $data['awayName'],
-            'url'   => PLSTATS_BASE . '/teams/' . $data['awaySlug'] . '/',
-        ],
-        'competitor' => [
-            [
-                '@type' => 'SportsTeam',
-                'name'  => $data['homeName'],
-                'url'   => PLSTATS_BASE . '/teams/' . $data['homeSlug'] . '/',
-            ],
-            [
-                '@type' => 'SportsTeam',
-                'name'  => $data['awayName'],
-                'url'   => PLSTATS_BASE . '/teams/' . $data['awaySlug'] . '/',
-            ],
-        ],
-        'image' => $data['homeImage'],
-    ];
+        ];
+    }
+    return $node;
 }
 
 /**
@@ -297,29 +325,30 @@ function plstats_schema_sports_event(array $data): array
  * @param array $data {
  *   slug:      string
  *   name:      string
- *   logo:      string   Absolute URL
+ *   logo?:     string   Absolute URL (omitted when the club has no own crest)
  *   founded?:  int|string
  *   stadium?:  string
+ *   inLeague?: bool     Plays in the current Premier League season
  * }
  */
 function plstats_schema_sports_team(array $data): array
 {
     $node = [
-        '@type'    => 'SportsTeam',
-        '@id'      => PLSTATS_BASE . '/teams/' . $data['slug'] . '/#sportsteam',
-        'name'     => $data['name'],
-        'sport'    => 'Association Football',
-        'url'      => PLSTATS_BASE . '/teams/' . $data['slug'] . '/',
-        'logo'     => [
+        '@type' => 'SportsTeam',
+        '@id'   => PLSTATS_BASE . '/teams/' . $data['slug'] . '/#sportsteam',
+        'name'  => $data['name'],
+        'sport' => 'Association Football',
+        'url'   => PLSTATS_BASE . '/teams/' . $data['slug'] . '/',
+    ];
+    if (!empty($data['logo'])) {
+        $node['logo'] = [
             '@type' => 'ImageObject',
             'url'   => $data['logo'],
-        ],
-        'memberOf' => [
-            '@type' => 'SportsOrganization',
-            'name'  => 'Premier League',
-            'url'   => 'https://www.premierleague.com',
-        ],
-    ];
+        ];
+    }
+    if (!empty($data['inLeague'])) {
+        $node['memberOf'] = plstats_schema_premier_league();
+    }
     if (!empty($data['founded'])) {
         $node['foundingDate'] = (string)$data['founded'];
     }
@@ -330,33 +359,6 @@ function plstats_schema_sports_team(array $data): array
         ];
     }
     return $node;
-}
-
-/**
- * Person node for the author bio page.
- *
- * @param array $data {
- *   url:        string
- *   name:       string
- *   jobTitle?:  string
- *   description?: string
- *   knowsAbout?: string[]
- *   sameAs?:    string[]
- * }
- */
-function plstats_schema_person(array $data): array
-{
-    return [
-        '@type'       => 'Person',
-        '@id'         => $data['url'] . '#author',
-        'name'        => $data['name'],
-        'url'         => $data['url'],
-        'jobTitle'    => $data['jobTitle']    ?? 'Football Data Analyst & Sports Writer',
-        'description' => $data['description'] ?? '',
-        'worksFor'    => ['@id' => PLSTATS_BASE . '/#organization'],
-        'knowsAbout'  => $data['knowsAbout']  ?? [],
-        'sameAs'      => $data['sameAs']      ?? [],
-    ];
 }
 
 // ── Output ────────────────────────────────────────────────────────────────────
@@ -374,6 +376,6 @@ function plstats_output_schema(array $graph): void
         '@graph'   => array_values($graph),
     ];
     echo '<script type="application/ld+json">' . "\n"
-        . json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+        . json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_HEX_TAG)
         . "\n</script>\n";
 }

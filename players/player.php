@@ -423,12 +423,11 @@ if ($player['DateOfBirth']) {
 if ($player['Nationality']) {
   $personNode['nationality'] = ['@type' => 'Country', 'name' => $player['Nationality']];
 }
-if ($player['TeamName']) {
-  $personNode['memberOf'] = [
-    '@type' => 'SportsTeam',
-    'name'  => $player['TeamName'],
-    'url'   => $teamUrl,
-  ];
+if ($player['TeamName'] && $player['TeamSlug']) {
+  // Same @id as the team page's SportsTeam node
+  $personNode['memberOf'] = plstats_schema_team_ref($player['TeamName'], $player['TeamSlug']);
+} elseif ($player['TeamName']) {
+  $personNode['memberOf'] = ['@type' => 'SportsTeam', 'name' => $player['TeamName']];
 }
 ?>
 <!DOCTYPE html>

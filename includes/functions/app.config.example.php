@@ -25,6 +25,12 @@ return [
   // Leave empty and the card is not printed.
   'CONTACT_EMAIL' => '',
 
+  // Optional: the site's own official social profiles (full https URLs), printed as
+  // the Organization's schema "sameAs". List only accounts that exist. Empty = none.
+  'SOCIAL_PROFILES' => [
+    // 'https://x.com/your_handle',
+  ],
+
   'db' => [
     'host'    => 'localhost',
     'dbname'  => 'your_local_database_name',
