@@ -1,6 +1,7 @@
 <?php
 require '../includes/functions/db.php';
 require '../includes/functions/helpers.php';
+require '../includes/functions/stats.php';
 require '../includes/schema-markups/schema-helpers.php';
 
 // Per-90 figures are only shown from this many minutes in the season
@@ -658,12 +659,18 @@ if ($player['TeamName'] && $player['TeamSlug']) {
             <section class="player_section player_rankings" aria-labelledby="player_rankings_title">
               <div class="section_head">
                 <h2 class="section_title" id="player_rankings_title">League rankings <span class="section_title_season"><?= htmlspecialchars($displaySeason) ?></span></h2>
+                <a class="section_link" href="<?= htmlspecialchars(plstats_stats_url()) ?>">All stats <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
               </div>
               <ol class="rank_list">
                 <?php foreach ($topRankings as $r): ?>
                   <li class="rank_item">
                     <span class="rank_pos num"><?= plstats_ordinal((int)$r['Rank']) ?></span>
-                    <span class="rank_label"><?= htmlspecialchars($r['Label']) ?></span>
+                    <?php $rankPage = plstats_stats_page_for_metric($r['MetricKey']); ?>
+                    <?php if ($rankPage !== ''): ?>
+                      <a class="rank_label" href="<?= htmlspecialchars(plstats_stats_url($rankPage, $displaySeason, plstats_current_season($pdo))) ?>"><?= htmlspecialchars($r['Label']) ?></a>
+                    <?php else: ?>
+                      <span class="rank_label"><?= htmlspecialchars($r['Label']) ?></span>
+                    <?php endif; ?>
                     <span class="rank_value num"><?= plstats_format_metric($r['Value'], $r['Unit']) ?></span>
                   </li>
                 <?php endforeach; ?>

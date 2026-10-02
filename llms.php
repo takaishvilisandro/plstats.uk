@@ -8,6 +8,7 @@
 
 require 'includes/functions/db.php';
 require_once 'includes/functions/helpers.php';
+require_once 'includes/functions/stats.php';
 
 header('Content-Type: text/plain; charset=utf-8');
 
@@ -19,6 +20,7 @@ $matchSeasons  = [];
 $teams         = [];
 $playerCount   = 0;
 $exampleMatch  = '';
+$statSeasons   = [];
 
 try {
   $season  = plstats_current_season($pdo);
@@ -62,6 +64,9 @@ try {
     WHERE p.DeleteDate IS NULL
       AND p.Slug IS NOT NULL
   ")->fetchColumn();
+
+  // Seasons with player stats pages (newest first)
+  $statSeasons = plstats_stats_seasons($pdo);
 
   // One played match as a URL example
   $m = $pdo->query("
@@ -112,7 +117,25 @@ if ($playerCount > 0) {
   $lines[] = '- [Players](' . plstats_url('/players/') . "): $playerCount players at current Premier League clubs, with appearances, minutes, goals and assists";
 }
 $lines[] = '- [Teams](' . plstats_url('/teams/') . '): every current club with league position, form and next fixture';
+if ($statSeasons) {
+  $lines[] = '- [Stats](' . plstats_stats_url() . '): Premier League stat leaders, top 5 of every leaderboard plus team rankings';
+}
 $lines[] = '';
+
+if ($statSeasons) {
+  $statDefault = in_array($season, $statSeasons, true) ? $season : $statSeasons[0];
+  $lines[] = '## Stats leaderboards';
+  $lines[] = '';
+  foreach (plstats_stats_pages() as $slug => $page) {
+    $links = [];
+    foreach ($statSeasons as $s) {
+      $links[] = '[' . $s . '](' . plstats_stats_url($slug, $s, $statDefault) . ')';
+    }
+    $lines[] = '- Premier League ' . $page['name'] . ': ' . implode(', ', $links);
+  }
+  $lines[] = '- Totals and per-90 tables; per-90 figures include players with at least a third of the minutes available.';
+  $lines[] = '';
+}
 
 if ($teams) {
   $lines[] = '## Teams' . ($season !== '' ? " ($season)" : '');
@@ -150,6 +173,7 @@ $lines[] = '- Fixtures and results for a season: /matches/{season}/';
 $lines[] = '- Match: /matches/{season}/{round}/{home-team}-vs-{away-team}/' . ($exampleMatch !== '' ? " (for example $exampleMatch)" : '');
 $lines[] = '- Team: /teams/{team}/';
 $lines[] = '- Player: /players/{player}/';
+$lines[] = '- Stats page: /stats/{page}/ for the current season, /stats/{page}/{season}/ for earlier ones';
 $lines[] = '';
 
 $lines[] = '## About';

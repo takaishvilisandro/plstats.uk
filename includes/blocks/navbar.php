@@ -4,12 +4,13 @@ require_once __DIR__ . '/../functions/nav.php';
 // Search stays hidden until it actually works (no dead controls).
 $search_enabled = false;
 
-// Main sections. Stats / Compare are added here once those pages exist.
+// Main sections. Compare is added here once that page exists.
 $_navItems = [
   ['url' => '/matches/', 'label' => 'Matches', 'title' => 'Matches',              'icon' => 'fa-calendar-alt'],
   ['url' => '/table/',   'label' => 'Table',   'title' => 'Premier League Table', 'icon' => 'fa-list-ol'],
   ['url' => '/players/', 'label' => 'Players', 'title' => 'Players',              'icon' => 'fa-user'],
   ['url' => '/teams/',   'label' => 'Teams',   'title' => 'Teams',                'icon' => 'fa-shield-alt'],
+  ['url' => '/stats/',   'label' => 'Stats',   'title' => 'Premier League Stats', 'icon' => 'fa-chart-bar'],
 ];
 
 $_seasonLabel = plstats_nav_season_label($pdo ?? null);
@@ -45,9 +46,9 @@ $_seasonLabel = plstats_nav_season_label($pdo ?? null);
   </div>
 </header>
 
-<!-- Mobile bottom tab bar -->
+<!-- Mobile bottom tab bar (the logo is the way home) -->
 <nav class="bottom_nav" aria-label="Main">
-  <?php foreach (array_merge([['url' => '/', 'label' => 'Home', 'title' => 'Home', 'icon' => 'fa-home']], $_navItems) as $_item):
+  <?php foreach ($_navItems as $_item):
     $_active = nav_is_active($_item['url']);
   ?>
     <a href="<?= htmlspecialchars(plstats_url($_item['url'])) ?>" title="<?= htmlspecialchars($_item['title']) ?>" class="bottom_nav_item<?= $_active ? ' active' : '' ?>"<?= $_active ? ' aria-current="page"' : '' ?>>

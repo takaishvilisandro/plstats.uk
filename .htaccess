@@ -93,6 +93,18 @@ RewriteRule ^players/?$ players/index.php [L]
 
 # ==================================================
 
+# 6d. STATS HUB + STATS PAGES
+
+# /stats/ = hub, /stats/{page}/ = current season, /stats/{page}/YYYY-YYYY/ = earlier season.
+
+# ==================================================
+
+RewriteRule ^stats/([a-z0-9-]+)/([0-9]{4}-[0-9]{4})/?$ stats/board.php?page=$1&season=$2 [L,QSA]
+RewriteRule ^stats/([a-z0-9-]+)/?$ stats/board.php?page=$1 [L,QSA]
+RewriteRule ^stats/?$ stats/index.php [L]
+
+# ==================================================
+
 # 7. NEWS DETAIL (only when the script exists)
 
 # ==================================================

@@ -380,7 +380,7 @@ if ($homeSeason !== '') {
               <section class="home_section" aria-labelledby="home_scorers_title">
                 <div class="section_head">
                   <h2 class="section_title" id="home_scorers_title">Top scorers</h2>
-                  <a class="section_link" href="<?= htmlspecialchars(plstats_url('/players/')) ?>">All players <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
+                  <a class="section_link" href="<?= htmlspecialchars(plstats_url('/stats/top-scorers/')) ?>">All top scorers <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
                 </div>
                 <div class="card card--lg">
                   <ol class="scorer_list">

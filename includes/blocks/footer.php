@@ -15,6 +15,7 @@ require_once __DIR__ . '/../functions/nav.php';
         <a href="<?= htmlspecialchars(plstats_url('/table/')) ?>">League table</a>
         <a href="<?= htmlspecialchars(plstats_url('/players/')) ?>">Players</a>
         <a href="<?= htmlspecialchars(plstats_url('/teams/')) ?>">Teams</a>
+        <a href="<?= htmlspecialchars(plstats_url('/stats/')) ?>">Stats</a>
         <a href="<?= htmlspecialchars(plstats_url('/author/')) ?>"<?= nav_is_active('/author/') ? ' class="active" aria-current="page"' : '' ?>>About</a>
       </nav>
     </div>

@@ -190,6 +190,15 @@
   overflow-wrap: break-word;
 }
 
+a.rank_label {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+a.rank_label:hover {
+  color: var(--brand);
+}
+
 .rank_value {
   margin-top: 4px;
   font-size: var(--fs-sm);

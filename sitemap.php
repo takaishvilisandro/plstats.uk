@@ -293,6 +293,63 @@ try {
 }
 
 /* ----------------------------------------
+   3e. STATS: /stats/ hub and every stats page with a
+   board, current season at /stats/{page}/, earlier
+   seasons at /stats/{page}/{season}/.
+   lastmod = DataVersions 'leaderboards' (current season)
+   or the board's last change (earlier seasons).
+---------------------------------------- */
+try {
+  require_once 'includes/functions/stats.php';
+
+  $statSeasons   = plstats_stats_seasons($pdo);
+  $currentSeason = plstats_current_season($pdo);
+  $statDefault   = in_array($currentSeason, $statSeasons, true) ? $currentSeason : ($statSeasons[0] ?? '');
+  $boardsUpdated = plstats_data_updated($pdo, 'leaderboards');
+
+  if ($statDefault !== '') {
+    echo "  <url>\n";
+    echo "    <loc>" . escapeXml(plstats_stats_url()) . "</loc>\n";
+    if ($boardsUpdated) {
+      echo "    <lastmod>" . $boardsUpdated->format('Y-m-d') . "</lastmod>\n";
+    }
+    echo "    <changefreq>daily</changefreq>\n";
+    echo "    <priority>0.8</priority>\n";
+    echo "  </url>\n";
+
+    $boardStmt = $pdo->prepare("
+      SELECT DATE(MAX(DataUpdatedAt))
+      FROM Leaderboards
+      WHERE Season = :season
+        AND MetricKey = :metric_key
+        AND EntityType = 'Player'
+        AND DeleteDate IS NULL
+    ");
+
+    foreach (plstats_stats_pages() as $slug => $page) {
+      foreach ($statSeasons as $s) {
+        $boardStmt->execute(['season' => $s, 'metric_key' => $page['main']]);
+        $boardDate = $boardStmt->fetchColumn();
+        if (!$boardDate) {
+          continue; // no board, no page
+        }
+        $isCurrent = ($s === $statDefault);
+        $lastmod   = ($isCurrent && $boardsUpdated) ? $boardsUpdated->format('Y-m-d') : $boardDate;
+
+        echo "  <url>\n";
+        echo "    <loc>" . escapeXml(plstats_stats_url($slug, $s, $statDefault)) . "</loc>\n";
+        echo "    <lastmod>" . escapeXml($lastmod) . "</lastmod>\n";
+        echo "    <changefreq>" . ($isCurrent ? 'daily' : 'yearly') . "</changefreq>\n";
+        echo "    <priority>" . ($isCurrent ? '0.8' : '0.5') . "</priority>\n";
+        echo "  </url>\n";
+      }
+    }
+  }
+} catch (Exception $e) {
+  // Silent fail - continue with other URLs
+}
+
+/* ----------------------------------------
    4. NEWS PAGES (if you have news table)
 ---------------------------------------- */
 try {
