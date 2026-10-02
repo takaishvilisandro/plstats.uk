@@ -401,6 +401,25 @@ if ($displaySeason !== '') {
     . ': Premier League player profile on PLStats.uk.';
 }
 
+// Data-written summary (only facts the page shows; no pronouns)
+$summary = [];
+$who     = $playerName . (($age !== null || $player['Nationality']) ? ' (' . implode(', ', array_filter([$age !== null ? (string)$age : '', (string)$player['Nationality']])) . ')' : '');
+if ($position && $player['TeamName']) {
+  $summary[] = "$who is a " . strtolower($position) . " at {$player['TeamName']}.";
+} elseif ($player['TeamName']) {
+  $summary[] = "$who plays for {$player['TeamName']}.";
+} elseif ($position) {
+  $summary[] = "$who is a " . strtolower($position) . '.';
+}
+if ($displaySeason !== '' && (int)$totals['Appearances'] > 0) {
+  $apps = (int)$totals['Appearances'];
+  $summary[] = "Premier League $displaySeason: $apps " . ($apps === 1 ? 'appearance' : 'appearances')
+    . ' (' . number_format((int)$totals['Minutes']) . ' minutes), '
+    . (int)$totals['Goals'] . ((int)$totals['Goals'] === 1 ? ' goal' : ' goals') . ' and '
+    . (int)$totals['Assists'] . ((int)$totals['Assists'] === 1 ? ' assist.' : ' assists.');
+}
+$playerSummary = implode(' ', $summary);
+
 $breadcrumbs = [
   ['name' => 'Home',    'url' => plstats_url('/')],
   ['name' => 'Players', 'url' => plstats_url('/players/')],
@@ -453,20 +472,8 @@ if ($player['TeamName'] && $player['TeamSlug']) {
     <meta name="robots" content="noindex, follow">
   <?php endif; ?>
 
-  <!-- Open Graph -->
-  <meta property="og:type"        content="profile">
-  <meta property="og:locale"      content="en_GB">
-  <meta property="og:url"         content="<?= htmlspecialchars($canonicalUrl) ?>">
-  <meta property="og:title"       content="<?= htmlspecialchars($pageTitle) ?>">
-  <meta property="og:description" content="<?= htmlspecialchars($pageDesc) ?>">
-  <meta property="og:image"       content="<?= htmlspecialchars(PLSTATS_OG_IMAGE) ?>">
-
-  <!-- Twitter -->
-  <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:site"        content="<?= htmlspecialchars(plstats_url('/')) ?>">
-  <meta name="twitter:title"       content="<?= htmlspecialchars($pageTitle) ?>">
-  <meta name="twitter:description" content="<?= htmlspecialchars($pageDesc) ?>">
-  <meta name="twitter:image"       content="<?= htmlspecialchars(PLSTATS_OG_IMAGE) ?>">
+  <!-- Open Graph / Twitter -->
+  <?= plstats_social_meta($pageTitle, $pageDesc, $canonicalUrl, 'profile') ?>
 
   <?php
   plstats_output_schema([
@@ -540,6 +547,10 @@ if ($player['TeamName'] && $player['TeamSlug']) {
           </p>
         <?php endif; ?>
       </section>
+
+      <?php if ($playerSummary !== ''): ?>
+        <p class="page_summary player_summary"><?= htmlspecialchars($playerSummary) ?></p>
+      <?php endif; ?>
 
       <!-- KPI CARDS (displayed season, all clubs) -->
       <?php if ($kpiCards): ?>

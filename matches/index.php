@@ -86,8 +86,10 @@ $seasonRows = array_values(array_filter($rows, fn($r) => $r['_season'] === $sele
 require_once __DIR__ . '/../includes/functions/helpers.php';
 require __DIR__ . '/../includes/functions/matches_hub.php';
 
-// H1 text unchanged (SEO-controlled)
-$hubHeading = 'Premier League Matches';
+// H1, title and description name the season shown
+$hubHeading = "Premier League Fixtures & Results $selectedSeason";
+$pageTitle  = plstats_page_title($hubHeading);
+$pageDesc   = "Premier League $selectedSeason fixtures and results, round by round: scores, kick-off times and match pages with lineups, stats and commentary.";
 ?>
 <!DOCTYPE html>
 <html lang="en-GB">
@@ -98,8 +100,8 @@ $hubHeading = 'Premier League Matches';
 
   <?php include '../includes/blocks/head.php' ?>
 
-  <title>Premier League Fixtures & Results – PLStats.uk</title>
-  <meta name="description" content="Premier League fixtures, results and live match coverage – updated with commentary and analysis." />
+  <title><?= htmlspecialchars($pageTitle) ?></title>
+  <meta name="description" content="<?= htmlspecialchars($pageDesc) ?>" />
   <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/matches.css')) ?>" />
 
   <!-- Canonical -->
@@ -107,18 +109,8 @@ $hubHeading = 'Premier League Matches';
 
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 
-  <!-- Open Graph -->
-  <meta property="og:type"        content="website">
-  <meta property="og:locale"      content="en_GB">
-  <meta property="og:url"         content="<?= htmlspecialchars(plstats_url('/matches/')) ?>">
-  <meta property="og:title"       content="Premier League Fixtures & Results – PLStats.uk">
-  <meta property="og:description" content="Premier League fixtures, results and live match coverage – updated with commentary and analysis.">
-
-  <!-- Twitter -->
-  <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:site"        content="<?= htmlspecialchars(plstats_url('/')) ?>">
-  <meta name="twitter:title"       content="Premier League Fixtures & Results – PLStats.uk">
-  <meta name="twitter:description" content="Premier League fixtures, results and live match coverage – updated with commentary and analysis.">
+  <!-- Open Graph / Twitter -->
+  <?= plstats_social_meta($pageTitle, $pageDesc, plstats_url('/matches/')) ?>
 
   <?php
   plstats_output_schema([
@@ -131,8 +123,8 @@ $hubHeading = 'Premier League Matches';
     array_merge(
       plstats_schema_collection_page(
         plstats_url('/matches/'),
-        'Premier League Matches – Fixtures & Results',
-        'Complete Premier League match coverage with fixtures, results, commentary, and statistics.',
+        $hubHeading,
+        $pageDesc,
         plstats_url('/matches/#breadcrumb')
       ),
       [

@@ -8,6 +8,7 @@
 header('Content-Type: application/xml; charset=utf-8');
 
 require 'includes/functions/db.php';
+require_once 'includes/functions/helpers.php';
 
 /* ----------------------------------------
    Helper Functions
@@ -41,43 +42,44 @@ echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 /* ----------------------------------------
    1. STATIC PAGES
 ---------------------------------------- */
+// lastmod = when that page's data last changed (DataVersions, UTC);
+// About = when its template file last changed. Unknown = no lastmod.
+$sitemapDate = function (?DateTimeImmutable $when): string {
+  return $when ? $when->format('Y-m-d') : '';
+};
 $staticPages = [
   [
     'loc' => $baseUrl . '/',
     'changefreq' => 'daily',
     'priority' => '1.0',
-    'lastmod' => date('Y-m-d')
+    'lastmod' => $sitemapDate(plstats_data_updated($pdo, 'site'))
   ],
   [
     'loc' => $baseUrl . '/matches/',
     'changefreq' => 'daily',
     'priority' => '0.9',
-    'lastmod' => date('Y-m-d')
+    'lastmod' => $sitemapDate(plstats_data_updated($pdo, 'matches'))
   ],
   [
     'loc' => $baseUrl . '/teams/',
     'changefreq' => 'weekly',
     'priority' => '0.8',
-    'lastmod' => date('Y-m-d')
-  ],
-  [
-    'loc' => $baseUrl . '/news/',
-    'changefreq' => 'daily',
-    'priority' => '0.8',
-    'lastmod' => date('Y-m-d')
+    'lastmod' => $sitemapDate(plstats_data_updated($pdo, 'standings'))
   ],
   [
     'loc' => $baseUrl . '/author/',
     'changefreq' => 'monthly',
     'priority' => '0.6',
-    'lastmod' => date('Y-m-d')
+    'lastmod' => is_file(__DIR__ . '/author/index.php') ? date('Y-m-d', filemtime(__DIR__ . '/author/index.php')) : ''
   ]
 ];
 
 foreach ($staticPages as $page) {
   echo "  <url>\n";
   echo "    <loc>" . escapeXml($page['loc']) . "</loc>\n";
-  echo "    <lastmod>" . $page['lastmod'] . "</lastmod>\n";
+  if ($page['lastmod'] !== '') {
+    echo "    <lastmod>" . $page['lastmod'] . "</lastmod>\n";
+  }
   echo "    <changefreq>" . $page['changefreq'] . "</changefreq>\n";
   echo "    <priority>" . $page['priority'] . "</priority>\n";
   echo "  </url>\n";
@@ -87,11 +89,21 @@ foreach ($staticPages as $page) {
    2. TEAM PAGES
 ---------------------------------------- */
 try {
+  // lastmod = the club's last played match or last current-season table change,
+  // whichever is later (historic seasons were re-imported in bulk, so they don't count)
   $teamsStmt = $pdo->query("
-    SELECT Slug, Name
-    FROM Teams
-    WHERE DeleteDate IS NULL
-    ORDER BY Name ASC
+    SELECT t.Slug, t.Name,
+      DATE(GREATEST(
+        COALESCE((SELECT MAX(m.Date) FROM Matches m
+                  WHERE (m.HomeTeamId = t.Id OR m.AwayTeamId = t.Id)
+                    AND m.DeleteDate IS NULL AND m.HomeTeamScore IS NOT NULL), '1000-01-01'),
+        COALESCE((SELECT MAX(s.DataUpdatedAt) FROM Standings s
+                  JOIN Seasons se ON se.Label = s.Season AND se.Status = 'InProgress' AND se.DeleteDate IS NULL
+                  WHERE s.TeamId = t.Id AND s.DeleteDate IS NULL), '1000-01-01')
+      )) AS Updated
+    FROM Teams t
+    WHERE t.DeleteDate IS NULL
+    ORDER BY t.Name ASC
   ");
 
   while ($team = $teamsStmt->fetch()) {
@@ -99,7 +111,9 @@ try {
 
     echo "  <url>\n";
     echo "    <loc>" . escapeXml($teamUrl) . "</loc>\n";
-    echo "    <lastmod>" . date('Y-m-d') . "</lastmod>\n";
+    if ($team['Updated'] && $team['Updated'] !== '1000-01-01') {
+      echo "    <lastmod>" . escapeXml($team['Updated']) . "</lastmod>\n";
+    }
     echo "    <changefreq>weekly</changefreq>\n";
     echo "    <priority>0.7</priority>\n";
     echo "  </url>\n";

@@ -384,3 +384,75 @@ function plstats_age(?string $dateOfBirth): ?int
 
   return (new DateTime($dateOfBirth, $tz))->diff(new DateTime('today', $tz))->y;
 }
+
+/* ----------------------------------------
+   SEO: titles and social tags
+---------------------------------------- */
+
+/**
+ * "@handle" from the X/Twitter URL in app.config.php SOCIAL_PROFILES, or ''.
+ */
+function plstats_twitter_handle(): string
+{
+  foreach (defined('PLSTATS_SAME_AS') ? PLSTATS_SAME_AS : [] as $url) {
+    $host = strtolower((string)parse_url($url, PHP_URL_HOST));
+    if (in_array($host, ['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'], true)) {
+      $handle = trim((string)parse_url($url, PHP_URL_PATH), '/');
+      if (preg_match('/^[A-Za-z0-9_]{1,15}$/', $handle)) {
+        return '@' . $handle;
+      }
+    }
+  }
+
+  return '';
+}
+
+/**
+ * The page <title>: "{text} | PLStats.uk" (one suffix site-wide).
+ */
+function plstats_page_title(string $text): string
+{
+  return $text . ' | ' . PLSTATS_NAME;
+}
+
+/**
+ * Open Graph and Twitter card tags, the same set on every page.
+ * Social networks don't show SVG images (most club crests), so the
+ * site's 1200×630 share image is used unless a raster image is given.
+ */
+function plstats_social_meta(string $title, string $description, string $url, string $type = 'website', string $image = ''): string
+{
+  if ($image === '' || preg_match('/\.svg$/i', (string)parse_url($image, PHP_URL_PATH))) {
+    $image = PLSTATS_OG_IMAGE;
+  }
+
+  $tags = [
+    ['property', 'og:type', $type],
+    ['property', 'og:locale', 'en_GB'],
+    ['property', 'og:site_name', PLSTATS_NAME],
+    ['property', 'og:url', $url],
+    ['property', 'og:title', $title],
+    ['property', 'og:description', $description],
+    ['property', 'og:image', $image],
+  ];
+  if ($image === PLSTATS_OG_IMAGE) {
+    $tags[] = ['property', 'og:image:width', '1200'];
+    $tags[] = ['property', 'og:image:height', '630'];
+    $tags[] = ['property', 'og:image:alt', 'PLStats.uk – Premier League stats and analysis'];
+  }
+  $tags[] = ['name', 'twitter:card', 'summary_large_image'];
+  $handle = plstats_twitter_handle();
+  if ($handle !== '') {
+    $tags[] = ['name', 'twitter:site', $handle];
+  }
+  $tags[] = ['name', 'twitter:title', $title];
+  $tags[] = ['name', 'twitter:description', $description];
+  $tags[] = ['name', 'twitter:image', $image];
+
+  $out = [];
+  foreach ($tags as [$attr, $key, $value]) {
+    $out[] = '<meta ' . $attr . '="' . $key . '" content="' . htmlspecialchars($value) . '">';
+  }
+
+  return implode("\n  ", $out) . "\n";
+}

@@ -467,6 +467,14 @@
   overflow-wrap: break-word;
 }
 
+.team_title .entity_season {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 .team_subtitle {
   margin-top: 4px;
   font-size: var(--fs-md);
@@ -825,6 +833,12 @@
 
   .team_title .entity_name {
     font-size: 44px;
+  }
+
+  .team_title .entity_season {
+    display: inline;
+    margin-left: 8px;
+    font-size: 22px;
   }
 
   .team_subtitle {

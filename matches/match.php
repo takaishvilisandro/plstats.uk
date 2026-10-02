@@ -319,9 +319,70 @@ if ($commentaryItems)           $matchTabs[] = ['id' => 'commentary', 'label' =>
    Build schema @graph
 ---------------------------------------- */
 $breadcrumbId = $canonicalUrl . '#breadcrumb';
-$matchTitle   = "$home vs $away | $matchSeason | Match Result & Review | plstats.uk";
-$matchDesc    = "Read the overview of $home vs $away in the Premier League $matchSeason season"
-  . ", including final score, commentary, and expert review from plstats.uk.";
+// Teams.Stadium is the club's current ground (historic rows can hold a placeholder),
+// so a venue is only named for current-season matches.
+$matchVenue = ($matchSeason === plstats_current_season($pdo)) ? (string)($match['HomeTeamStadium'] ?? '') : '';
+
+// Title and description state the score, scorers and only the sections this page has
+$matchWhen = date('j M Y', strtotime($match['Date']));
+if ($isPlayed) {
+  $matchTitle = plstats_page_title("$home vs $away {$homeGoals}–{$awayGoals} | Premier League $matchSeason");
+
+  $scorerParts = [];
+  foreach ([$homeId, $awayId] as $sideId) {
+    foreach ($scorers[$sideId] as $s) {
+      $scorerParts[] = $s['name'] . (count($s['minutes']) > 1 ? ' (' . count($s['minutes']) . ')' : '');
+    }
+  }
+  $sections = [];
+  if ($statGroups || $statsIsRaw) $sections[] = 'match stats';
+  if ($lineupSides)               $sections[] = 'lineups';
+  if ($commentaryItems)           $sections[] = 'commentary';
+  if ($review)                    $sections[] = 'match review';
+
+  $matchDesc = "$home {$homeGoals}–{$awayGoals} $away in the Premier League $matchSeason (Round " . $round . ", $matchWhen).";
+  if ($scorerParts) {
+    $matchDesc .= ' Scorers: ' . implode(', ', array_slice($scorerParts, 0, 5)) . (count($scorerParts) > 5 ? ' and more' : '') . '.';
+  }
+  if ($sections) {
+    $last = array_pop($sections);
+    $matchDesc .= ' ' . ucfirst($sections ? implode(', ', $sections) . ' and ' . $last : $last) . '.';
+  }
+} else {
+  $matchTitle = plstats_page_title("$home vs $away | Premier League $matchSeason Fixture");
+  $matchDesc  = "$home vs $away, Premier League $matchSeason Round " . $round
+    . ': kick-off ' . date('D j M Y, H:i', strtotime($match['Date'])) . ' UK time'
+    . ($matchVenue !== '' ? ' at ' . $matchVenue : '') . '.';
+}
+
+// Data-written summary under the match header (only facts the page shows)
+$venueTxt = $matchVenue !== '' ? ' at ' . $matchVenue : '';
+$context  = "Premier League $matchSeason, Round $round";
+if ($isPlayed) {
+  $when = date('j F Y', strtotime($match['Date']));
+  if ($homeGoals > $awayGoals) {
+    $matchSummary = "$home beat $away {$homeGoals}–{$awayGoals}$venueTxt on $when ($context).";
+  } elseif ($homeGoals < $awayGoals) {
+    $matchSummary = "$away won {$awayGoals}–{$homeGoals} away at $home on $when ($context).";
+  } else {
+    $matchSummary = "$home and $away drew {$homeGoals}–{$awayGoals}$venueTxt on $when ($context).";
+  }
+  $goalLines = [];
+  foreach ([$homeId => $home, $awayId => $away] as $sideId => $sideName) {
+    if ($scorers[$sideId]) {
+      $goalLines[] = "$sideName: " . implode(', ', array_map(fn($g) => $g['name'] . ' ' . implode(', ', $g['minutes']), $scorers[$sideId]));
+    }
+  }
+  if ($goalLines) {
+    $matchSummary .= ' Goals – ' . implode('; ', $goalLines) . '.';
+  }
+  if ($potm) {
+    $matchSummary .= ' Highest-rated player: ' . ($potm['DisplayName'] ?: $potm['PlayerName']) . ' (' . number_format((float)$potm['Rating'], 1) . ').';
+  }
+} else {
+  $matchSummary = "$home host $away$venueTxt on " . date('l j F Y', strtotime($match['Date']))
+    . ', kick-off ' . date('H:i', strtotime($match['Date'])) . " UK time ($context).";
+}
 
 $graph = [
   plstats_schema_organization(),
@@ -341,7 +402,7 @@ $graph = [
     'homeSlug'  => $match['HomeTeamSlug'],
     'awaySlug'  => $match['AwayTeamSlug'],
     'homeImage' => PLSTATS_BASE . '/' . $match['HomeTeamLogo'],
-    'stadium'   => $match['HomeTeamStadium'] ?? '',
+    'stadium'   => $matchVenue,
     'date'      => $match['Date'],
     'played'    => $played,
     'scoreHome' => $match['HomeTeamScore'],
@@ -389,19 +450,8 @@ if ($review) {
   <link rel="canonical" href="<?= $canonicalUrl ?>" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="article" />
-  <meta property="og:locale" content="en_GB" />
-  <meta property="og:title" content="<?= htmlspecialchars($matchTitle) ?>" />
-  <meta property="og:description" content="<?= htmlspecialchars($matchDesc) ?>" />
-  <meta property="og:url" content="<?= $canonicalUrl ?>" />
-  <meta property="og:image" content="<?= PLSTATS_BASE . '/' . htmlspecialchars($match['HomeTeamLogo']) ?>" />
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="<?= htmlspecialchars($matchTitle) ?>" />
-  <meta name="twitter:description" content="<?= htmlspecialchars($matchDesc) ?>" />
-  <meta name="twitter:image" content="<?= PLSTATS_BASE . '/' . htmlspecialchars($match['HomeTeamLogo']) ?>" />
+  <!-- Open Graph / Twitter -->
+  <?= plstats_social_meta($matchTitle, $matchDesc, $canonicalUrl, $review ? 'article' : 'website', PLSTATS_BASE . '/' . $match['HomeTeamLogo']) ?>
 
   <?php plstats_output_schema($graph); ?>
 
@@ -481,6 +531,8 @@ if ($review) {
           <?php endif; ?>
         <?php endforeach; ?>
       </section>
+
+      <p class="page_summary match_summary"><?= htmlspecialchars($matchSummary) ?></p>
 
       <?php
       $authorBoxUpdated = $matchDate;

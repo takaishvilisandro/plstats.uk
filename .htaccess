@@ -23,6 +23,7 @@ RewriteCond %{HTTP_HOST} ^www\.plstats\.uk$ [NC]
 RewriteRule ^ https://plstats.uk%{REQUEST_URI} [R=301,L]
 
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
+RewriteRule ^llms\.txt$ llms.php [L]
 
 # ==================================================
 

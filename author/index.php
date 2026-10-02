@@ -1,10 +1,15 @@
 <?php
 require '../includes/functions/db.php';
 require '../includes/schema-markups/schema-helpers.php';
+require_once '../includes/functions/helpers.php';
 
 $authorUrl  = PLSTATS_AUTHOR_URL;
 $authorName = PLSTATS_AUTHOR_NAME;
 $breadcrumbId = $authorUrl . '#breadcrumb';
+
+// Title and description say what the page explains (no claims it does not support)
+$pageTitle = plstats_page_title('About Us – Our Data & How Pages Are Made');
+$pageDesc  = 'How PLStats.uk works: where our Premier League data comes from, what it covers, how tables and stats are calculated and how match reports are written.';
 
 $graph = [
   plstats_schema_organization(),
@@ -15,13 +20,13 @@ $graph = [
     ['name' => 'About'],
   ]),
   plstats_schema_author_team(
-    'The PLStats editorial team produces data-driven Premier League match analysis, tactical breakdowns, verified lineups, and structured match statistics.'
+    'The PLStats editorial team publishes Premier League tables, player and team stats, lineups and match reports built from match data.'
   ),
   array_merge(
     plstats_schema_webpage(
       $authorUrl,
-      'About the Author – ' . PLSTATS_NAME,
-      'Learn about the PLStats editorial team: data analysts and football writers who produce structured Premier League match analysis, verified statistics, and tactical commentary.',
+      'About Us – Our Data & How Pages Are Made',
+      $pageDesc,
       $breadcrumbId
     ),
     [
@@ -34,7 +39,6 @@ $graph = [
 /* -------------------------------------------------
    Page content flags and figures (all from the DB)
 ------------------------------------------------- */
-require_once '../includes/functions/helpers.php';
 
 // Is there a real human review step for match reports? Only then say so.
 $has_human_review = false;
@@ -88,24 +92,13 @@ $breadcrumbs = [
   <?php include '../includes/blocks/head.php' ?>
   <link rel="stylesheet" href="<?= htmlspecialchars(plstats_url('/includes/css/author.css')) ?>" />
 
-  <title>About the Author – PLStats.uk | Premier League Data Analysts</title>
-  <meta name="description" content="Meet the PLStats editorial team: football data analysts and sports writers producing structured Premier League match analysis, verified statistics, and tactical commentary." />
+  <title><?= htmlspecialchars($pageTitle) ?></title>
+  <meta name="description" content="<?= htmlspecialchars($pageDesc) ?>" />
   <link rel="canonical" href="<?= $authorUrl ?>" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="profile" />
-  <meta property="og:locale" content="en_GB" />
-  <meta property="og:url" content="<?= $authorUrl ?>" />
-  <meta property="og:title" content="About the Author – PLStats.uk" />
-  <meta property="og:description" content="The PLStats editorial team: data-driven Premier League analysis, tactical breakdowns, and verified match statistics." />
-  <meta property="og:image" content="<?= PLSTATS_OG_IMAGE ?>" />
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="About the Author – PLStats.uk" />
-  <meta name="twitter:description" content="The PLStats editorial team: data-driven Premier League analysis, tactical breakdowns, and verified match statistics." />
-  <meta name="twitter:image" content="<?= PLSTATS_OG_IMAGE ?>" />
+  <!-- Open Graph / Twitter -->
+  <?= plstats_social_meta($pageTitle, $pageDesc, $authorUrl) ?>
 
   <?php plstats_output_schema($graph); ?>
 </head>

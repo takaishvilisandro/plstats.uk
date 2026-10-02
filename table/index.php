@@ -194,6 +194,26 @@ if ($isFinal) {
   $pageDesc  = "Premier League table for the $season season: positions, points, goal difference and last-five form, plus home and away tables.";
 }
 
+// Data-written summary: leader or champion, the gap, and the bottom three
+$tableSummary = '';
+$overall      = $tableViews[0]['rows'];
+if (count($overall) >= 2 && $overall[0]['played'] > 0 && ($isFinal || !$isArchive)) {
+  [$first, $second] = [$overall[0], $overall[1]];
+  $gap    = $first['points'] - $second['points'];
+  $gapTxt = $gap > 0 ? $gap . ($gap === 1 ? ' point' : ' points') . " ahead of {$second['name']}" : "level on points with {$second['name']}";
+  $bottom = array_column(array_filter($overall, fn($t) => $t['pos'] >= TABLE_RELEGATION_FROM), 'name');
+  $bottomTxt = count($bottom) === 3 ? "{$bottom[0]}, {$bottom[1]} and {$bottom[2]}" : '';
+
+  if ($isFinal) {
+    $tableSummary = "{$first['name']} won the Premier League $season with {$first['points']} points, $gapTxt."
+      . ($bottomTxt !== '' ? " $bottomTxt were relegated." : '');
+  } else {
+    $tableSummary = "{$first['name']} lead the Premier League $season table" . ($afterRound > 0 ? " after Round $afterRound" : '')
+      . " with {$first['points']} points, $gapTxt."
+      . ($bottomTxt !== '' ? " $bottomTxt are in the relegation places." : '');
+  }
+}
+
 $breadcrumbs = [['name' => 'Home', 'url' => plstats_url('/')]];
 if ($isArchive) {
   $breadcrumbs[] = ['name' => 'Table', 'url' => plstats_table_url()];
@@ -221,20 +241,8 @@ if ($isArchive) {
 
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 
-  <!-- Open Graph -->
-  <meta property="og:type"        content="website">
-  <meta property="og:locale"      content="en_GB">
-  <meta property="og:url"         content="<?= htmlspecialchars($canonicalUrl) ?>">
-  <meta property="og:title"       content="<?= htmlspecialchars($pageTitle) ?>">
-  <meta property="og:description" content="<?= htmlspecialchars($pageDesc) ?>">
-  <meta property="og:image"       content="<?= htmlspecialchars(PLSTATS_OG_IMAGE) ?>">
-
-  <!-- Twitter -->
-  <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:site"        content="<?= htmlspecialchars(plstats_url('/')) ?>">
-  <meta name="twitter:title"       content="<?= htmlspecialchars($pageTitle) ?>">
-  <meta name="twitter:description" content="<?= htmlspecialchars($pageDesc) ?>">
-  <meta name="twitter:image"       content="<?= htmlspecialchars(PLSTATS_OG_IMAGE) ?>">
+  <!-- Open Graph / Twitter -->
+  <?= plstats_social_meta($pageTitle, $pageDesc, $canonicalUrl) ?>
 
   <?php
   plstats_output_schema([
@@ -289,6 +297,10 @@ if ($isArchive) {
           <?php endforeach; ?>
         </div>
       </header>
+
+      <?php if ($tableSummary !== ''): ?>
+        <p class="page_summary table_summary"><?= htmlspecialchars($tableSummary) ?></p>
+      <?php endif; ?>
 
       <?php if ($seasonStatus === 'Incomplete'): ?>
         <p class="page_notice">Some matches from this season are missing from our data, so this is not the final table.</p>

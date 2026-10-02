@@ -102,14 +102,14 @@ $seasonRows = array_values(array_filter($rows, fn($r) => $r['_season'] === $sele
 require_once __DIR__ . '/../includes/functions/helpers.php';
 require __DIR__ . '/../includes/functions/matches_hub.php';
 
-// H1 text unchanged (SEO-controlled)
-$hubHeading = "Premier League Matches – $selectedSeason Season";
+// H1 and title name the season (same wording as the current-season hub)
+$hubHeading = "Premier League Fixtures & Results $selectedSeason";
 
 /* -------------------------------------------------
    SEO metadata
 ------------------------------------------------- */
 $canonicalUrl = plstats_url("/matches/$selectedSeason/");
-$pageTitle    = "Premier League $selectedSeason Season – Fixtures & Results – PLStats.uk";
+$pageTitle    = plstats_page_title($hubHeading);
 $pageDesc     = "Full Premier League $selectedSeason season archive: every fixture, round, and result with scores and match links.";
 ?>
 <!DOCTYPE html>
@@ -130,18 +130,8 @@ $pageDesc     = "Full Premier League $selectedSeason season archive: every fixtu
 
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 
-  <!-- Open Graph -->
-  <meta property="og:type"        content="website">
-  <meta property="og:locale"      content="en_GB">
-  <meta property="og:url"         content="<?= $canonicalUrl ?>">
-  <meta property="og:title"       content="<?= htmlspecialchars($pageTitle) ?>">
-  <meta property="og:description" content="<?= htmlspecialchars($pageDesc) ?>">
-
-  <!-- Twitter -->
-  <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:site"        content="<?= htmlspecialchars(plstats_url('/')) ?>">
-  <meta name="twitter:title"       content="<?= htmlspecialchars($pageTitle) ?>">
-  <meta name="twitter:description" content="<?= htmlspecialchars($pageDesc) ?>">
+  <!-- Open Graph / Twitter -->
+  <?= plstats_social_meta($pageTitle, $pageDesc, $canonicalUrl) ?>
 
   <?php
   $breadcrumbId = $canonicalUrl . '#breadcrumb';
@@ -156,7 +146,7 @@ $pageDesc     = "Full Premier League $selectedSeason season archive: every fixtu
     array_merge(
       plstats_schema_collection_page(
         $canonicalUrl,
-        "Premier League $selectedSeason Season – Fixtures & Results",
+        $hubHeading,
         $pageDesc,
         $breadcrumbId
       ),

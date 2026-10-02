@@ -751,3 +751,21 @@ a.match_row:hover {
     display: inline;
   }
 }
+
+/* ============================================
+   Page summary: one or two plain sentences
+   written from the data (team, player, table, match)
+   ============================================ */
+.page_summary {
+  max-width: 72ch;
+  margin: var(--space-4) 0 0;
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+@media screen and (min-width: 820px) {
+  .page_summary {
+    font-size: var(--fs-base);
+  }
+}

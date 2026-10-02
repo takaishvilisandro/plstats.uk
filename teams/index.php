@@ -76,6 +76,13 @@ foreach ($standingsBy as $s) {
 }
 
 $formClasses = ['W' => 'form_win', 'D' => 'form_draw', 'L' => 'form_loss'];
+
+// H1, title and description name the season and only what the cards show
+$pageHeading = 'Premier League Teams' . ($hubSeason !== '' ? " $hubSeason" : '');
+$pageTitle   = plstats_page_title($pageHeading);
+$pageDesc    = 'All ' . count($teams) . ' Premier League clubs' . ($hubSeason !== '' ? " for the $hubSeason season" : '')
+  . ': ' . ($seasonStarted ? 'league position, points and recent form, ' : '')
+  . ($nextBy ? 'next fixture ' : '') . 'and a profile page for each team.';
 ?>
 <!DOCTYPE html>
 <html lang="en-GB">
@@ -87,23 +94,14 @@ $formClasses = ['W' => 'form_win', 'D' => 'form_draw', 'L' => 'form_loss'];
   <?php include '../includes/blocks/head.php'; ?>
   <link href="<?= htmlspecialchars(plstats_url('/includes/css/teams.css')) ?>" rel="stylesheet">
 
-  <title>Premier League Teams – PLStats.uk</title>
-  <meta name="description" content="Explore all Premier League teams with quick stats, upcoming matches, and club profiles.">
+  <title><?= htmlspecialchars($pageTitle) ?></title>
+  <meta name="description" content="<?= htmlspecialchars($pageDesc) ?>">
 
   <!-- Canonical -->
   <link rel="canonical" href="<?= htmlspecialchars(plstats_url('/teams/')) ?>" />
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="website">
-  <meta property="og:locale" content="en_GB">
-  <meta property="og:title" content="Premier League Teams – PLStats.uk">
-  <meta property="og:description" content="Complete list of Premier League teams with stats and profiles.">
-  <meta property="og:url" content="<?= htmlspecialchars(plstats_url('/teams/')) ?>">
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Premier League Teams – PLStats.uk">
-  <meta name="twitter:description" content="Browse all Premier League football teams.">
+  <!-- Open Graph / Twitter -->
+  <?= plstats_social_meta($pageTitle, $pageDesc, plstats_url('/teams/')) ?>
 
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 </head>
@@ -128,7 +126,7 @@ $formClasses = ['W' => 'form_win', 'D' => 'form_draw', 'L' => 'form_loss'];
 
       <header class="teams_hub_header">
         <div>
-          <h1 class="teams_hub_title">Premier League Teams</h1>
+          <h1 class="teams_hub_title"><?= htmlspecialchars($pageHeading) ?></h1>
           <?php
           $metaParts = [count($teams) . ' clubs'];
           if ($hubSeason !== '') {
@@ -263,8 +261,8 @@ $formClasses = ['W' => 'form_win', 'D' => 'form_draw', 'L' => 'form_loss'];
     array_merge(
       plstats_schema_collection_page(
         $teamsUrl,
-        'Premier League Teams',
-        'Complete list of Premier League football teams with stats and profiles.',
+        $pageHeading,
+        $pageDesc,
         $teamsUrl . '#breadcrumb'
       ),
       [

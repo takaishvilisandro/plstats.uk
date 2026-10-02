@@ -190,21 +190,24 @@ if ($homeSeason !== '') {
   <link href="<?= SITE_URL ?>/includes/css/home.css" rel="stylesheet" type="text/css" />
   
   <!-- Primary Meta Tags -->
-  <title>plstats | Premier League Stats, Match Commentary & Lineups (2026)</title>
-  <meta name="description" content="plstats provides in-depth Premier League statistics, expert match commentary, verified lineups, tactical insights, and team performance analysis. Updated weekly with accurate football data." />
+  <?php
+  // One title suffix site-wide; the description only names what the site shows
+  $homeFirstTable = '';
+  try {
+    $homeFirstTable = (string)$pdo->query("SELECT MIN(Season) FROM Standings WHERE DeleteDate IS NULL")->fetchColumn();
+  } catch (PDOException $e) {
+    error_log('Homepage: first table season query failed.');
+  }
+  $homeTitle = plstats_page_title('Premier League Stats, Match Commentary & Lineups');
+  $homeDesc  = 'Premier League ' . ($homeSeason !== '' ? $homeSeason . ' ' : '')
+    . 'results, fixtures, league table, player stats, lineups and match commentary.'
+    . (preg_match('/^(\d{4})-\d{2}(\d{2})$/', $homeFirstTable, $fm) ? " League tables for every season since {$fm[1]}-{$fm[2]}." : '');
+  ?>
+  <title><?= htmlspecialchars($homeTitle) ?></title>
+  <meta name="description" content="<?= htmlspecialchars($homeDesc) ?>" />
 
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="plstats – Premier League Stats, Commentary & Lineups" />
-  <meta property="og:description" content="Explore Premier League match stats, expert commentary, confirmed lineups, and tactical insights. plstats turns raw football data into clear analysis." />
-  <meta property="og:image" content="<?= SITE_URL ?>/includes/images/premier-league-stats-analysis-plstats-uk.webp" />
-  <meta property="og:url" content="<?= SITE_URL ?>/" />
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="plstats – Premier League Match Stats & Analysis" />
-  <meta name="twitter:description" content="Detailed Premier League statistics, lineups, and match commentary in one data-driven platform." />
-  <meta name="twitter:image" content="<?= SITE_URL ?>/includes/images/premier-league-stats-analysis-plstats-uk.webp" />
+  <!-- Open Graph / Twitter -->
+  <?= plstats_social_meta($homeTitle, $homeDesc, SITE_URL . '/') ?>
 
   <!-- Canonical -->
   <link rel="canonical" href="<?= SITE_URL ?>/" />
@@ -224,8 +227,8 @@ if ($homeSeason !== '') {
     array_merge(
       plstats_schema_webpage(
         SITE_URL . '/',
-        'plstats | Premier League Stats, Match Commentary & Lineups (2026)',
-        'plstats provides in-depth Premier League statistics, expert match commentary, verified lineups, tactical insights, and team performance analysis. Updated weekly with accurate football data.',
+        $homeTitle,
+        $homeDesc,
         SITE_URL . '/#breadcrumb'
       ),
       ['about' => plstats_schema_premier_league()]

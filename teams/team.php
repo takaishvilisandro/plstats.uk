@@ -258,6 +258,45 @@ function team_squad_meta(array $p): string
 $nextIsHome = $nextFixture && (int)$nextFixture['HomeTeamId'] === $teamId;
 $nextUrl    = $nextFixture ? plstats_match_url($nextFixture['Date'], $nextFixture['Round'], $nextFixture['HomeSlug'], $nextFixture['AwaySlug']) : '';
 
+// ------------------------------------
+// SEO: title, H1 season, description and the
+// data-written summary (only facts the page has)
+// ------------------------------------
+$inSeason   = $currentSeason !== '' && (int)$team['IsActive'] === 1;
+$teamName   = $team['Name'];
+$pageTitle  = plstats_page_title($inSeason ? "$teamName Stats & Fixtures $currentSeason" : "$teamName – Premier League Team Profile");
+
+$summary  = [];
+$descBits = [];
+if ($standing) {
+  $gd = (int)$standing['GoalDifference'];
+  $summary[] = "$teamName are " . plstats_ordinal((int)$standing['Position']) . " in the Premier League $currentSeason with "
+    . (int)$standing['Points'] . ' points from ' . (int)$standing['Played'] . ' matches ('
+    . (int)$standing['Won'] . ' won, ' . (int)$standing['Drawn'] . ' drawn, ' . (int)$standing['Lost'] . ' lost), scoring '
+    . (int)$standing['GoalsScored'] . ' and conceding ' . (int)$standing['GoalsConceded'] . ' (goal difference ' . team_gd($gd) . ').';
+  $descBits[] = "$teamName are " . plstats_ordinal((int)$standing['Position']) . " in the Premier League $currentSeason with "
+    . (int)$standing['Points'] . ' points from ' . (int)$standing['Played'] . ' matches ('
+    . (int)$standing['Won'] . 'W ' . (int)$standing['Drawn'] . 'D ' . (int)$standing['Lost'] . 'L).';
+} elseif ($inSeason) {
+  $summary[]  = "$teamName play in the Premier League $currentSeason.";
+  $descBits[] = "$teamName in the Premier League $currentSeason.";
+}
+if ($nextFixture) {
+  $nextOpp  = $nextIsHome ? $nextFixture['AwayName'] : $nextFixture['HomeName'];
+  $nextWhen = date('D j M', strtotime($nextFixture['Date']));
+  $summary[]  = 'Next match: ' . ($nextIsHome ? "$nextOpp at home" : "away at $nextOpp") . " on $nextWhen (Round " . (int)$nextFixture['Round'] . ').';
+  $descBits[] = "Next: $nextOpp (" . ($nextIsHome ? 'H' : 'A') . "), $nextWhen.";
+}
+if (!$inSeason && $recentResults) {
+  $last = $recentResults[0];
+  $summary[] = 'Last Premier League match: ' . ['W' => 'a win', 'D' => 'a draw', 'L' => 'a defeat'][$last['Result']] . ' '
+    . $last['For'] . '–' . $last['Against'] . ($last['IsHome'] ? ' at home to ' : ' away at ') . $last['Opponent']
+    . ' on ' . date('j F Y', strtotime($last['Date'])) . '.';
+}
+$teamSummary = implode(' ', $summary);
+$pageDesc    = trim(implode(' ', $descBits) . ' '
+  . ($inSeason ? 'Results, form, squad and stats.' : "$teamName Premier League team profile" . ($recentResults ? ' with recent results.' : '.')));
+
 $breadcrumbs = [
   ['name' => 'Home',  'url' => plstats_url('/')],
   ['name' => 'Teams', 'url' => plstats_url('/teams/')],
@@ -274,28 +313,15 @@ $canonicalUrl = plstats_url('/teams/' . $teamSlug . '/');
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <?php include '../includes/blocks/head.php' ?>
 
-  <!-- ⛔ DO NOT TOUCH SEO -->
-  <title><?= htmlspecialchars($team['Name']) ?> – Team Profile | PLStats.uk</title>
-  <meta name="description" content="See <?= htmlspecialchars($team['Name']) ?> fixtures, form, and stats – powered by PLStats.uk." />
+  <title><?= htmlspecialchars($pageTitle) ?></title>
+  <meta name="description" content="<?= htmlspecialchars($pageDesc) ?>" />
   <link href="<?= htmlspecialchars(plstats_url('/includes/css/teams.css')) ?>" rel="stylesheet" type="text/css" />
   <link rel="canonical" href="<?= htmlspecialchars(plstats_url('/teams/' . $teamSlug . '/')) ?>" />
 
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="website">
-  <meta property="og:locale" content="en_GB">
-  <meta property="og:url" content="<?= htmlspecialchars(plstats_url('/teams/' . $teamSlug . '/')) ?>">
-  <meta property="og:title" content="<?= htmlspecialchars($team['Name']) ?> – Team Profile | PLStats.uk">
-  <meta property="og:description" content="See <?= htmlspecialchars($team['Name']) ?> fixtures, form, and stats – powered by PLStats.uk.">
-  <meta property="og:image" content="<?= htmlspecialchars(plstats_url('/' . ltrim($team['Logo'], '/'))) ?>">
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:site" content="<?= htmlspecialchars(plstats_url('/')) ?>">
-  <meta name="twitter:title" content="<?= htmlspecialchars($team['Name']) ?> – Team Profile | PLStats.uk">
-  <meta name="twitter:description" content="See <?= htmlspecialchars($team['Name']) ?> fixtures, form, and stats – powered by PLStats.uk.">
-  <meta name="twitter:image" content="<?= htmlspecialchars(plstats_url('/' . ltrim($team['Logo'], '/'))) ?>">
+  <!-- Open Graph / Twitter -->
+  <?= plstats_social_meta($pageTitle, $pageDesc, $canonicalUrl, 'website', (string)plstats_team_logo($pdo, $team['Logo'], $team['Slug'])) ?>
 
   <?php
   // Only what the page shows: no crest, stadium or year for placeholder rows
@@ -306,8 +332,8 @@ $canonicalUrl = plstats_url('/teams/' . $teamSlug . '/');
     array_merge(
       plstats_schema_webpage(
         $canonicalUrl,
-        $team['Name'] . ' – Team Profile',
-        'See ' . $team['Name'] . ' fixtures, form, and stats – powered by PLStats.uk.',
+        $inSeason ? "$teamName Stats & Fixtures $currentSeason" : "$teamName – Premier League Team Profile",
+        $pageDesc,
         $canonicalUrl . '#breadcrumb'
       ),
       ['about' => ['@id' => $canonicalUrl . '#sportsteam']]
@@ -342,9 +368,11 @@ $canonicalUrl = plstats_url('/teams/' . $teamSlug . '/');
           <div class="team_identity">
             <div class="entity_crest"><?= team_badge($teamForBadge, 104, false) ?></div>
             <div class="team_identity_text">
-              <h1 class="entity_title team_title"><span class="entity_name"><?= htmlspecialchars($team['Name']) ?></span></h1>
-              <?php if ($currentSeason !== '' && (int)$team['IsActive'] === 1): ?>
-                <p class="team_subtitle num">Premier League · <?= htmlspecialchars($currentSeason) ?></p>
+              <?php if ($inSeason): ?>
+                <h1 class="entity_title team_title"><span class="entity_name"><?= htmlspecialchars($teamName) ?></span> <span class="entity_season">Stats &amp; Fixtures <?= htmlspecialchars($currentSeason) ?></span></h1>
+                <p class="team_subtitle">Premier League</p>
+              <?php else: ?>
+                <h1 class="entity_title team_title"><span class="entity_name"><?= htmlspecialchars($teamName) ?></span></h1>
               <?php endif; ?>
             </div>
           </div>
@@ -370,6 +398,10 @@ $canonicalUrl = plstats_url('/teams/' . $teamSlug . '/');
                 </div>
               <?php endif; ?>
             </div>
+          <?php endif; ?>
+
+          <?php if ($teamSummary !== ''): ?>
+            <p class="page_summary"><?= htmlspecialchars($teamSummary) ?></p>
           <?php endif; ?>
 
           <?php if ($updatedAt || $form): ?>
@@ -597,8 +629,8 @@ $canonicalUrl = plstats_url('/teams/' . $teamSlug . '/');
               <h2 class="section_title" id="team_more_title">More Premier League stats</h2>
             </div>
             <div class="link_tiles">
-              <a class="link_tile" href="<?= htmlspecialchars(plstats_url('/matches/')) ?>">
-                <i class="far fa-calendar-alt" aria-hidden="true"></i><span>Fixtures &amp; results</span>
+              <a class="link_tile" href="<?= htmlspecialchars(plstats_url('/matches/') . ($inSeason ? '?team=' . rawurlencode($team['Slug']) : '')) ?>">
+                <i class="far fa-calendar-alt" aria-hidden="true"></i><span><?= $inSeason ? htmlspecialchars($teamName) . ' fixtures &amp; results' : 'Fixtures &amp; results' ?></span>
               </a>
               <a class="link_tile" href="<?= htmlspecialchars(plstats_table_url()) ?>">
                 <i class="fas fa-list-ul" aria-hidden="true"></i><span>League table</span>

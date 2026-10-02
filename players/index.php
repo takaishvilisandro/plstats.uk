@@ -163,20 +163,8 @@ $breadcrumbs = [
 
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 
-  <!-- Open Graph -->
-  <meta property="og:type"        content="website">
-  <meta property="og:locale"      content="en_GB">
-  <meta property="og:url"         content="<?= htmlspecialchars($canonicalUrl) ?>">
-  <meta property="og:title"       content="<?= htmlspecialchars($pageTitle) ?>">
-  <meta property="og:description" content="<?= htmlspecialchars($pageDesc) ?>">
-  <meta property="og:image"       content="<?= htmlspecialchars(PLSTATS_OG_IMAGE) ?>">
-
-  <!-- Twitter -->
-  <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:site"        content="<?= htmlspecialchars(plstats_url('/')) ?>">
-  <meta name="twitter:title"       content="<?= htmlspecialchars($pageTitle) ?>">
-  <meta name="twitter:description" content="<?= htmlspecialchars($pageDesc) ?>">
-  <meta name="twitter:image"       content="<?= htmlspecialchars(PLSTATS_OG_IMAGE) ?>">
+  <!-- Open Graph / Twitter -->
+  <?= plstats_social_meta($pageTitle, $pageDesc, $canonicalUrl) ?>
 
   <?php
   plstats_output_schema([

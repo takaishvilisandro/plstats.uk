@@ -11,8 +11,8 @@ require_once __DIR__ . '/includes/functions/bootstrap.php';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Page not found – plstats.uk</title>
-  <meta name="description" content="This page could not be found on plstats.uk. Go back to the homepage or jump to matches, the league table, players or teams.">
+  <title>Page not found | PLStats.uk</title>
+  <meta name="description" content="This page could not be found on PLStats.uk. Go back to the homepage or jump to matches, the league table, players or teams.">
 
   <!-- Not indexable; no canonical on an error page -->
   <meta name="robots" content="noindex">
